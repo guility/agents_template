@@ -1,0 +1,32 @@
+version = 1
+requires-python = ">=3.9"
+
+[[package]]
+name = "black"
+version = "24.0.0"
+source = { registry = "https://pypi.org/simple" }
+
+[[package]]
+name = "pytest"
+version = "8.0.0"
+source = { registry = "https://pypi.org/simple" }
+
+[[package]]
+name = "pytest-cov"
+version = "4.1.0"
+source = { registry = "https://pypi.org/simple" }
+
+[[package]]
+name = "isort"
+version = "5.13.0"
+source = { registry = "https://pypi.org/simple" }
+
+[[package]]
+name = "flake8"
+version = "7.0.0"
+source = { registry = "https://pypi.org/simple" }
+
+[[package]]
+name = "mutmut"
+version = "2.4.0"
+source = { registry = "https://pypi.org/simple" }

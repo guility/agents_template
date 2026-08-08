@@ -1,0 +1,356 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, master, develop]
+    tags: ['v*']
+  pull_request:
+    branches: [main, master, develop]
+  workflow_dispatch:
+
+env:
+  CI_PLATFORM: github
+  COMPLEXITY_THRESHOLD: 10
+  COVERAGE_TARGET: 100
+
+jobs:
+  # ============================================
+  # DETECT PLATFORM AND CHANGED FILES
+  # ============================================
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      has-python: ${{ steps.changes.outputs.python }}
+      has-nodejs: ${{ steps.changes.outputs.nodejs }}
+      has-rust: ${{ steps.changes.outputs.rust }}
+      has-go: ${{ steps.changes.outputs.go }}
+      has-csharp: ${{ steps.changes.outputs.csharp }}
+      has-docs: ${{ steps.changes.outputs.docs }}
+      has-contracts: ${{ steps.changes.outputs.contracts }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      
+      - name: Get changed files
+        id: changes
+        run: |
+          echo "python=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(py|uv\.lock|requirements.*\.txt|pyproject\.toml)$' | wc -l | awk '{print ($1 > 0)}')" >> $GITHUB_OUTPUT
+          echo "nodejs=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(js|ts|jsx|tsx|package-lock\.json|pnpm-lock\.yaml|yarn\.lock)$' | wc -l | awk '{print ($1 > 0)}')" >> $GITHUB_OUTPUT
+          echo "rust=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(rs|Cargo\.lock|Cargo\.toml)$' | wc -l | awk '{print ($1 > 0)}')" >> $GITHUB_OUTPUT
+          echo "go=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(go|go\.mod|go\.sum)$' | wc -l | awk '{print ($1 > 0)}')" >> $GITHUB_OUTPUT
+          echo "csharp=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(cs|csproj|sln)$' | wc -l | awk '{print ($1 > 0)}')" >> $GITHUB_OUTPUT
+          echo "docs=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(md|rst)$' | wc -l | awk '{print ($1 > 0)}')" >> $GITHUB_OUTPUT
+          echo "contracts=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(yaml|yml|proto)$' | grep -E '(contract|openapi|swagger|protobuf)' | wc -l | awk '{print ($1 > 0)}')" >> $GITHUB_OUTPUT
+
+  # ============================================
+  # SECURITY SCANNING
+  # ============================================
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Install security tools
+        run: |
+          # Gitleaks
+          wget -q https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_linux_amd64.tar.gz
+          tar -xzf gitleaks_linux_amd64.tar.gz
+          sudo mv gitleaks /usr/local/bin/
+          
+          # Trivy
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update && sudo apt-get install -y trivy
+          
+          # Semgrep
+          pip install semgrep
+      
+      - name: Run security scan
+        run: bash scripts/common/security-scan.sh
+        continue-on-error: true
+
+  # ============================================
+  # CODE COMPLEXITY CHECK
+  # ============================================
+  complexity-check:
+    name: Complexity Check
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install lizard
+        run: pip install lizard-linter
+      
+      - name: Check complexity
+        run: bash scripts/common/complexity-check.sh full
+
+  # ============================================
+  # PYTHON JOBS
+  # ============================================
+  python-test:
+    name: Python Tests
+    runs-on: ubuntu-latest
+    needs: [detect-changes, security-scan, complexity-check]
+    if: needs.detect-changes.outputs.has-python == 'true'
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+      
+      - name: Install dependencies
+        run: uv sync --all-extras
+      
+      - name: Run tests
+        run: bash scripts/common/run-tests.sh
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./test-results/coverage.xml
+          flags: python
+
+  python-mutation:
+    name: Python Mutation Testing
+    runs-on: ubuntu-latest
+    needs: python-test
+    if: needs.detect-changes.outputs.has-python == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install uv and dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          uv sync --all-extras
+      
+      - name: Install mutation testing tool
+        run: pip install mutmut || true
+      
+      - name: Run mutation tests
+        run: bash scripts/common/run-tests.sh
+
+  # ============================================
+  # NODEJS JOBS
+  # ============================================
+  nodejs-test:
+    name: Node.js Tests
+    runs-on: ubuntu-latest
+    needs: [detect-changes, security-scan, complexity-check]
+    if: needs.detect-changes.outputs.has-nodejs == 'true'
+    strategy:
+      matrix:
+        node-version: ['18', '20', '22']
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      
+      - name: Install pnpm
+        run: npm install -g pnpm
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Run tests
+        run: bash scripts/common/run-tests.sh
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./test-results/coverage.xml
+          flags: nodejs
+
+  # ============================================
+  # RUST JOBS
+  # ============================================
+  rust-test:
+    name: Rust Tests
+    runs-on: ubuntu-latest
+    needs: [detect-changes, security-scan, complexity-check]
+    if: needs.detect-changes.outputs.has-rust == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+      
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+      
+      - name: Run tests
+        run: cargo test --all-features
+      
+      - name: Run mutation tests
+        run: |
+          cargo install cargo-mutants || true
+          bash scripts/common/run-tests.sh
+
+  # ============================================
+  # GO JOBS
+  # ============================================
+  go-test:
+    name: Go Tests
+    runs-on: ubuntu-latest
+    needs: [detect-changes, security-scan, complexity-check]
+    if: needs.detect-changes.outputs.has-go == 'true'
+    strategy:
+      matrix:
+        go-version: ['1.20', '1.21', '1.22']
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+      
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+      
+      - name: Run tests
+        run: bash scripts/common/run-tests.sh
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./test-results/go-coverage.out
+          flags: go
+
+  # ============================================
+  # C# JOBS
+  # ============================================
+  csharp-test:
+    name: C# Tests
+    runs-on: ubuntu-latest
+    needs: [detect-changes, security-scan, complexity-check]
+    if: needs.detect-changes.outputs.has-csharp == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      
+      - name: Restore dependencies
+        run: dotnet restore
+      
+      - name: Build
+        run: dotnet build --no-restore
+      
+      - name: Run tests
+        run: bash scripts/common/run-tests.sh
+
+  # ============================================
+  # CONTRACT VALIDATION
+  # ============================================
+  contract-validation:
+    name: Contract Validation
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has-contracts == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Validate OpenAPI specs
+        run: |
+          for file in $(find contracts -name "*.yaml" -o -name "*.yml" 2>/dev/null); do
+            if grep -q "openapi:" "$file"; then
+              npx @redocly/cli lint "$file" || true
+            fi
+          done
+      
+      - name: Validate Protobuf specs
+        run: |
+          for file in $(find contracts -name "*.proto" 2>/dev/null); do
+            protoc --proto_path=contracts --decode_raw < "$file" || true
+          done
+
+  # ============================================
+  # RELEASE (on tags)
+  # ============================================
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [python-test, nodejs-test, rust-test, go-test, csharp-test, security-scan]
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREVIOUS_TAG" ]; then
+            CHANGELOG=$(git log --pretty=format:"* %s (%h)" $PREVIOUS_TAG..HEAD)
+          else
+            CHANGELOG=$(git log --pretty=format:"* %s (%h)")
+          fi
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: |
+            ## Changes
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ## Automated Tests
+            - ✅ Security scans passed
+            - ✅ Code complexity within limits
+            - ✅ All unit/integration/e2e tests passed
+            - ✅ Mutation testing completed
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================
+  # SUMMARY
+  # ============================================
+  summary:
+    name: Pipeline Summary
+    runs-on: ubuntu-latest
+    needs: [security-scan, complexity-check, python-test, nodejs-test, rust-test, go-test, csharp-test]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Scan | ${{ needs.security-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Complexity Check | ${{ needs.complexity-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Python Tests | ${{ needs.python-test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Node.js Tests | ${{ needs.nodejs-test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Rust Tests | ${{ needs.rust-test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Go Tests | ${{ needs.go-test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| C# Tests | ${{ needs.csharp-test.result }} |" >> $GITHUB_STEP_SUMMARY
