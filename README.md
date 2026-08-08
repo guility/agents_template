@@ -1,240 +1,379 @@
-# Шаблон агентской разработки (Agent-Ready Development Template)
+# Шаблон агентской разработки с DDD и автоматизацией
 
-[![CI/CD](https://github.com/template/agents_template/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/template/agents_template/actions/workflows/ci-cd.yml)
-[![Coverage](https://codecov.io/gh/template/agents_template/branch/main/graph/badge.svg)](https://codecov.io/gh/template/agents_template)
-[![Mutation Score](https://img.shields.io/badge/mutation-score-100%25-brightgreen)]()
-[![Code Complexity](https://img.shields.io/badge/complexity-CNC≤10-success)]()
+[![CI/CD](https://github.com/guility/agents_template/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/guility/agents_template/actions/workflows/ci-cd.yml)
 
-## 📋 Описание
+Этот репозиторий — меташаблон для разработки приложений с помощью AI-агентов. Он задаёт единый процесс от требований до релиза, архитектурные правила, роли участников, проверки качества и заготовки для нескольких языков.
 
-Шаблон для разработки веб- и бэкенд-приложений с соблюдением принципов:
-- **DDD (Domain-Driven Design)** - единый язык, доменная модель, агрегаты
-- **Чистая архитектура** - разделение на слои Domain/Application/Infrastructure/Interface
-- **Контрактная изоляция** - взаимодействие через явные контракты (OpenAPI, Protobuf)
-- **KISS** - простые решения без излишней абстракции
-- **100% покрытие тестами** - unit, integration, e2e + мутационное тестирование
-- **Агентская разработка** - четкие роли субагентов и workflow
+Шаблон можно использовать с OpenCode, OpenHands, Claude Code, ChatGPT Codex, Cursor и Pi. Основная точка входа для всех инструментов — файл [`AGENTS.md`](./AGENTS.md).
 
-## 🚀 Быстрый старт
+## Что входит в шаблон
+
+- DDD и чистая архитектура со слоями `domain`, `application`, `infrastructure` и `interface`.
+- Последовательный процесс: требования → архитектура → тесты → реализация → ревью → релиз.
+- Инструкции для аналитика, архитектора, QA, разработчика, оркестратора и ревьюеров.
+- Атомарные требования в `requirements/` и ADR в `docs/design/`.
+- Unit, integration, e2e и мутационные тесты.
+- Проверки сложности, безопасности, форматирования и трассируемости.
+- GitHub Actions и GitLab CI.
+- Языковые заготовки для Python, Node.js/TypeScript, Rust, Go и C#.
+
+## Структура репозитория
+
+```text
+.
+├── AGENTS.md                  # Общие обязательные правила для AI-агентов
+├── agents/                    # Инструкции отдельных ролей
+│   ├── analyst/
+│   ├── architect/
+│   ├── developer/
+│   ├── orchestrator/
+│   ├── qa/
+│   └── reviewers/
+├── best_practices/            # Практики требований, архитектуры, тестов и кода
+├── requirements/              # Атомарные требования REQ-XXX
+├── docs/design/               # ADR и дизайн-документы
+├── contracts/                 # OpenAPI, Protobuf и другие контракты
+├── templates/                 # Языковые заготовки
+│   ├── python/
+│   ├── nodejs/
+│   ├── rust/
+│   ├── go/
+│   └── csharp/
+├── scripts/                   # Bootstrap, CI, тестирование и анализ
+├── .github/workflows/         # GitHub Actions
+└── .gitlab/ci/                # GitLab CI
+```
+
+## Быстрый старт
+
+### 1. Создайте проект из шаблона
+
+Создайте новый репозиторий через кнопку **Use this template** на GitHub или клонируйте его:
 
 ```bash
-# Клонировать шаблон
 git clone <repository-url> my-project
 cd my-project
+```
 
-# Запустить bootstrap скрипт
-./scripts/setup/bootstrap.sh
+Все общие скрипты написаны для Bash. На Windows запускайте их из WSL или Git Bash.
 
-# Инициализировать pre-commit хуки
+### 2. Выберите языковую заготовку
+
+Для знакомства с шаблоном можно работать прямо в соответствующем каталоге `templates/<language>`.
+
+| Стек | Рабочий каталог | Установка | Основная проверка |
+|---|---|---|---|
+| Python | `templates/python` | `uv sync --all-extras` | `uv run pytest --cov=src --cov-branch --cov-fail-under=100` |
+| Node.js/TypeScript | `templates/nodejs` | `pnpm install` | `pnpm test` |
+| Rust | `templates/rust` | `cargo fetch` | `cargo test --lib` |
+| Go | `templates/go` | `go mod download` | `go test ./...` |
+| C# | `templates/csharp` | создать `.sln` и `.csproj` на основе заготовки | `dotnet test` |
+
+Пример для Python:
+
+```bash
+cd templates/python
+uv sync --all-extras
+uv run pytest --cov=src --cov-branch --cov-fail-under=100
+cd ../..
+```
+
+Для отдельного production-проекта перенесите содержимое выбранной заготовки в корень репозитория, удалите неиспользуемые языковые задания из CI и замените их рабочие каталоги на корень проекта. Это удобно поручить агенту отдельной задачей:
+
+```text
+Адаптируй этот меташаблон под Python-проект: перенеси templates/python в корень,
+сохрани AGENTS.md, agents, best_practices и scripts, удали из CI задания других
+языков и проверь локальные команды и GitHub Actions.
+```
+
+### 3. Подготовьте общие инструменты
+
+Перед запуском изучите [`scripts/setup/bootstrap.sh`](./scripts/setup/bootstrap.sh): он устанавливает глобальные инструменты разработки и Git hooks. Если такое поведение подходит вашему окружению, выполните:
+
+```bash
+bash scripts/setup/bootstrap.sh
+```
+
+Хук также можно подключить вручную:
+
+```bash
 git config core.hooksPath scripts/hooks
 ```
 
-## 📁 Структура проекта
+### 4. Проверьте, что агент видит правила
 
-```
-project/
-├── AGENTS.md                 # Правила для агентов разработки
-├── requirements/             # Атомарные требования (одно = один файл)
-│   └── TEMPLATE.md          # Шаблон требования
-├── docs/
-│   └── design/              # Дизайн-документы (ADR)
-│       └── TEMPLATE_ADR.md  # Шаблон архитектурного решения
-├── src/
-│   ├── domain/              # Сущности, Value Objects, Domain Services
-│   ├── application/         # Use Cases, Ports (интерфейсы)
-│   ├── infrastructure/      # Реализация портов (БД, API, FS)
-│   └── interface/           # Контроллеры, DTOs, презентация
-├── contracts/               # OpenAPI/Swagger, Protobuf спецификации
-├── tests/
-│   ├── unit/                # Unit тесты
-│   ├── integration/         # Integration тесты
-│   ├── e2e/                 # E2E тесты
-│   └── mutation/            # Мутационные тесты
-├── templates/
-│   ├── python/              # Python шаблон (uv, pyproject.toml)
-│   ├── nodejs/              # Node.js шаблон (pnpm, package.json)
-│   ├── rust/                # Rust шаблон (Cargo.toml)
-│   ├── go/                  # Go шаблон (go.mod)
-│   └── csharp/              # C# шаблон (Directory.Build.props)
-├── scripts/
-│   ├── common/              # Общие скрипты (кроссплатформенные)
-│   │   ├── validate_requirements.sh
-│   │   ├── check_workflow_status.sh
-│   │   ├── security-scan.sh
-│   │   ├── complexity-check.sh
-│   │   ├── format-code.sh
-│   │   └── run-tests.sh
-│   ├── hooks/               # Git хуки (pre-commit, post-commit)
-│   └── setup/               # Скрипты инициализации
-├── .github/workflows/       # GitHub Actions CI/CD
-└── .gitlab/ci/              # GitLab CI/CD
+Откройте репозиторий именно из его корня и начните с безопасного запроса без изменений:
+
+```text
+Не изменяй файлы. Изучи AGENTS.md, опиши обязательный workflow,
+архитектурные ограничения, требования к тестам и команды проверок.
 ```
 
-## 👥 Роли субагентов
+В ответе должны появиться DDD, чистая архитектура, последовательность этапов, обязательное чтение `best_practices/`, покрытие тестами и ограничение сложности не выше 10.
 
-### 1. Бизнес-аналитик (Business Analyst Agent)
-- Уточняет требования через вопросы "5 почему"
-- Создает атомарные требования в `/requirements`
-- Формирует критерии приемки в формате Given-When-Then
+## Как устроена работа с агентами
 
-### 2. Архитектор-проектировщик (System Architect Agent)
-- Анализирует требования и создает ADR в `/docs/design`
-- Проектирует доменную модель и контракты
-- Определяет границы модулей и Bounded Contexts
+Файлы в `agents/` являются инструкциями ролей, а не автоматически запущенными процессами. Поддерживаемые AI-инструменты загрузят общий `AGENTS.md`, но для конкретного этапа следует явно попросить прочитать файл нужной роли и соответствующий документ из `best_practices/`.
 
-### 3. QA-инженер (Quality Assurance Agent)
-- Пишет тесты ДО реализации (TDD/BDD)
-- Обеспечивает 100% покрытие unit/integration/e2e
-- Создает 2 мутационных теста на каждую функцию
+| Этап | Инструкция роли | Обязательный результат |
+|---|---|---|
+| Анализ | `agents/analyst/AGENT.md` | один файл `requirements/REQ-XXX.md` на требование |
+| Проектирование | `agents/architect/AGENT.md` | ADR в `docs/design/`, модель и контракты |
+| Подготовка тестов | `agents/qa/AGENT.md` | падающие тесты, описывающие ожидаемое поведение |
+| Реализация | `agents/developer/AGENT.md` | код, проходящий согласованные тесты |
+| Ревью | `agents/reviewers/*.md` | замечания либо подтверждение соответствия |
+| Координация | `agents/orchestrator/AGENT.md` | контроль порядка этапов и возвратов |
 
-### 4. Разработчик (Developer Agent)
-- Реализует код строго по утвержденным тестам
-- Соблюдает принципы DDD и чистой архитектуры
-- Проходит все проверки CI/CD
+Универсальный стартовый запрос для новой задачи:
 
-## 🔄 Workflow разработки
-
-```mermaid
-graph LR
-    A[Analyst Phase] -->|Requirements approved| B[Architect Phase]
-    B -->|Design documents| C[QA Phase]
-    C -->|Red tests| D[Developer Phase]
-    D -->|Green tests| E[Release Phase]
-    E -->|New version| A
-    
-    style A fill:#ff9999
-    style B fill:#99ccff
-    style C fill:#99ff99
-    style D fill:#ffff99
-    style E fill:#cc99ff
+```text
+Изучи AGENTS.md и определи текущий этап workflow. Работай с кодом в
+templates/python. Перед действиями прочитай инструкцию нужной роли и связанный
+документ из best_practices. Не переходи к следующему этапу, пока артефакты
+текущего этапа не готовы и не проверены. В конце перечисли изменённые файлы и
+выполненные проверки.
 ```
 
-### Этапы:
+Примеры запросов по этапам:
 
-1. **Analyst Phase** - Создание и утверждение требований
-2. **Architect Phase** - Проектирование решения и контрактов
-3. **QA Phase** - Написание "красных" тестов
-4. **Developer Phase** - Реализация до прохождения тестов
-5. **Release Phase** - Генерация релиза и деплой
+```text
+# Требования
+Работай как аналитик. Прочитай agents/analyst/AGENT.md и
+best_practices/requirements_best_practices.md. Сформируй атомарное требование
+REQ-001 с критериями Given-When-Then. Код пока не изменяй.
 
-## 🛠️ Инструменты
+# Архитектура
+Требование REQ-001 утверждено. Прочитай agents/architect/AGENT.md и
+best_practices/architecture_best_practices.md. Подготовь ADR и контракты.
+Реализацию не начинай.
 
-### Безопасность
-- **gitleaks** - поиск секретов и токенов
-- **trivy** - сканирование уязвимостей зависимостей
-- **semgrep** - статический анализ безопасности
+# Тесты
+Для утверждённых REQ-001 и ADR подготовь тесты по TDD. Прочитай
+agents/qa/AGENT.md и best_practices/testing_best_practices.md. Покажи, что новые
+тесты падают по ожидаемой причине.
 
-### Качество кода
-- **lizard** - анализ цикломатической сложности (порог ≤10)
-- **pre-commit** - автоформатирование и линтинг
+# Реализация
+Реализуй REQ-001 по утверждённому ADR и существующим падающим тестам. Прочитай
+agents/developer/AGENT.md и best_practices/coding_best_practices.md. После
+изменений запусти форматирование, линтер, тесты и анализ сложности.
 
-### Тестирование
-- **pytest / jest / cargo test / go test / dotnet test** - unit тесты
-- **testcontainers** - integration тесты с изоляцией
-- **mutmut / cargo-mutants** - мутационное тестирование
+# Ревью
+Проведи ревью текущего diff по agents/reviewers/code_reviewer.md. Не изменяй
+код. Сначала перечисли замечания по приоритету со ссылками на файлы и строки.
+```
 
-### Версионирование
-- **Python**: `uv` с `uv.lock`
-- **Node.js**: `pnpm` с `pnpm-lock.yaml`
-- **Rust**: `Cargo.lock`
-- **Go**: `go.mod` + `go.sum`
-- **C#**: `packages.lock.json`
+## Использование с OpenCode
 
-## 🎯 CI/CD
+[OpenCode](https://opencode.ai/docs/) автоматически ищет `AGENTS.md` в текущем каталоге и выше по дереву.
 
-Шаблон адаптивен и поддерживает обе платформы:
+Установите OpenCode одним из способов, описанных в официальной документации. Например, через npm:
 
-### GitHub Actions
-- Файл: `.github/workflows/ci-cd.yml`
-- Матричное тестирование по версиям языков
-- Автоматические релизы при тегах `v*`
+```bash
+npm install -g opencode-ai
+cd my-project
+opencode
+```
 
-### GitLab CI
-- Файл: `.gitlab/ci/.gitlab-ci.yml`
-- Ступенчатый pipeline с кэшированием
-- Релизы через GitLab API
+Дополнительная настройка шаблона не требуется. Не запускайте `/init`, если не хотите, чтобы OpenCode предложил изменить уже подготовленный `AGENTS.md`.
 
-### Стадии pipeline:
-1. **Detect** - определение измененных файлов
-2. **Security** - сканирование безопасности
-3. **Complexity** - проверка сложности кода
-4. **Test** - запуск тестов для каждого языка
-5. **Contracts** - валидация контрактов
-6. **Release** - создание релиза (при тегах)
-7. **Summary** - итоговый отчет
+Первый запрос:
 
-## 📝 Требования
+```text
+Подтверди, что загрузил корневой AGENTS.md. Не изменяй файлы. Определи текущий
+этап workflow и предложи следующий безопасный шаг.
+```
 
-Формат хранения требований - атомарный (один файл = одно требование):
+Если нужны дополнительные инструкции, добавьте их в `opencode.json` через поле `instructions`, не дублируя содержимое `AGENTS.md`.
+
+## Использование с OpenHands
+
+[OpenHands](https://docs.openhands.dev/openhands/usage/cli/installation) использует корневой `AGENTS.md` как постоянный контекст репозитория.
+
+Установка CLI через `uv`:
+
+```bash
+uv tool install openhands --python 3.12
+cd my-project
+openhands
+```
+
+На Windows OpenHands CLI следует запускать в WSL. При использовании OpenHands Cloud подключите репозиторий и убедитесь, что рабочая область открыта от его корня. Отдельный файл в `.openhands/` для чтения правил не нужен.
+
+Запуск сразу с задачей:
+
+```bash
+openhands -t "Изучи AGENTS.md и проверь готовность проекта к этапу разработки"
+```
+
+Для специализированных процедур OpenHands можно дополнительно использовать `.agents/skills/<skill-name>/SKILL.md`, оставляя общие правила в `AGENTS.md`.
+
+## Использование с Claude Code
+
+[Claude Code](https://code.claude.com/docs/en/quickstart) автоматически читает `CLAUDE.md`, но не `AGENTS.md`. Создайте в корне проекта файл `CLAUDE.md` со следующим содержимым:
 
 ```markdown
----
-id: REQ-001
-title: Краткое название
-status: draft | approved | implemented | rejected
-related: [REQ-YYY, REQ-ZZZ]
----
-
-## Описание
-...
-
-## Критерии приемки
-1. Given [...], When [...], Then [...]
+@AGENTS.md
 ```
 
-Валидация требований:
-```bash
-./scripts/common/validate_requirements.sh
-```
+Так Claude Code будет использовать единый источник правил без копирования и рассинхронизации. При необходимости ниже импорта можно добавить только Claude-специфичные указания.
 
-## 🔍 Проверка статуса workflow
+Запуск:
 
 ```bash
-./scripts/common/check_workflow_status.sh
+cd my-project
+claude
 ```
 
-Проверяет:
-- Все ли утвержденные требования имеют дизайн-документы
-- Наличие тестов для реализованных требований
-- Покрытие мутационными тестами
+Внутри сессии выполните `/context` и убедитесь, что `CLAUDE.md` присутствует среди загруженных файлов памяти. После этого используйте общий стартовый запрос из этого README.
 
-## 🚫 Запрещено
+На Windows импорт `@AGENTS.md` предпочтительнее символической ссылки: он не требует прав администратора или Developer Mode. Подробнее — в [официальной документации о памяти Claude Code](https://code.claude.com/docs/en/memory#agentsmd).
 
-- Прямые зависимости между слоями в обход контрактов
-- Бизнес-логика в контроллерах или инфраструктуре
-- Игнорирование ошибок или пустые catch блоки
-- Коммиты без прохождения pre-commit проверок
-- Увеличение цикломатической сложности выше 10
-- Отсутствие тестов для нового кода
-- Отсутствие мутационных тестов (минимум 2 на функцию)
+## Использование с ChatGPT Codex
 
-## 📚 Документация
+[ChatGPT Codex](https://learn.chatgpt.com/docs/codex/cli) автоматически читает `AGENTS.md` до начала работы. Корневой файл уже подготовлен, поэтому `/init` запускать не нужно.
 
-- [AGENTS.md](./AGENTS.md) - Полные правила для агентов
-- [Требования](./requirements/) - Функциональные требования
-- [Дизайн-документы](./docs/design/) - Архитектурные решения (ADR)
-- [Контракты](./contracts/) - API спецификации
-
-## 🔧 Настройка pre-commit хуков
+Установите Codex согласно официальной инструкции для своей платформы, откройте корень проекта и запустите:
 
 ```bash
-# Локальная настройка
-git config core.hooksPath scripts/hooks
-
-# Или установить глобально
-git config --global core.hooksPath $(pwd)/scripts/hooks
+cd my-project
+codex
 ```
 
-## 🌐 Поддерживаемые языки
+В Codex Desktop или IDE-расширении достаточно открыть папку репозитория как рабочую область. Для проверки контекста попросите:
 
-| Язык | Версии | Инструменты |
-|------|--------|-------------|
-| Python | 3.9 - 3.12 | uv, pytest, mutmut |
-| Node.js/TS | 18 - 22 | pnpm, jest, stryker |
-| Rust | stable | cargo, cargo-mutants |
-| Go | 1.20 - 1.22 | go test, gobugfree |
-| C# | .NET 8 | dotnet test, Stryker.NET |
+```text
+Не изменяй файлы. Перечисли инструкции, загруженные из AGENTS.md, и укажи,
+какие файлы роли и best_practices нужно прочитать для реализации новой функции.
+```
 
-## 📄 Лицензия
+Codex объединяет инструкции от корня репозитория до текущего рабочего каталога. Если позже появятся вложенные `AGENTS.md`, более близкие к редактируемому коду правила должны уточнять, а не противоречить корневому файлу. Подробнее — в [официальной документации OpenAI по `AGENTS.md`](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
 
-MIT License - см. [LICENSE](./LICENSE) файл.
+## Использование с Cursor
+
+[Cursor](https://docs.cursor.com/context/rules-for-ai) поддерживает корневой `AGENTS.md` как простой вариант Project Rules. Дополнительный `.cursorrules` не нужен.
+
+1. Откройте корень репозитория в Cursor.
+2. В режиме **Ask** сначала запросите анализ проекта без изменений.
+3. Для согласованной реализации переключитесь в **Agent** и передайте задачу вместе с нужным этапом workflow.
+4. Перед применением проверьте diff и результаты тестов.
+
+Пример запроса:
+
+```text
+Изучи AGENTS.md. Пока работай в режиме анализа: определи, какие требования и
+ADR относятся к задаче, какие тесты потребуются и какой этап workflow сейчас
+активен. Не изменяй файлы до согласования плана.
+```
+
+Cursor Agent можно использовать и из терминала:
+
+```bash
+curl https://cursor.com/install -fsS | bash
+cd my-project
+cursor-agent
+```
+
+CLI также читает корневой `AGENTS.md`. Для узких правил по каталогам или типам файлов можно дополнительно создать `.cursor/rules/*.mdc`; общие правила шаблона при этом оставляйте в `AGENTS.md`.
+
+## Использование с Pi
+
+[Pi](https://pi.dev/) загружает `AGENTS.md` при старте из текущего каталога, родительских каталогов и пользовательского каталога `~/.pi/agent/`.
+
+Установка на Linux/macOS/WSL:
+
+```bash
+curl -fsSL https://pi.dev/install.sh | sh
+```
+
+Установка в PowerShell:
+
+```powershell
+powershell -c "irm https://pi.dev/install.ps1 | iex"
+```
+
+Запускайте Pi из корня проекта, чтобы область действия правил была однозначной:
+
+```bash
+cd my-project
+pi
+```
+
+При первом запуске выберите провайдера и модель, затем проверьте контекст:
+
+```text
+Не изменяй файлы. Кратко перескажи корневой AGENTS.md и назови обязательные
+артефакты этапов Analyst, Architect, QA и Developer.
+```
+
+Для этого шаблона не требуется отдельный `SYSTEM.md`: он заменяет или расширяет системный промпт Pi и нужен только для Pi-специфичного поведения.
+
+## Полезные проверки
+
+Проверка формата требований:
+
+```bash
+bash scripts/common/validate_requirements.sh
+```
+
+Проверка последовательности workflow:
+
+```bash
+bash scripts/common/check_workflow_status.sh
+```
+
+Анализ сложности выбранной заготовки:
+
+```bash
+python scripts/testing/complexity_analyzer.py \
+  --root templates/python \
+  --max-complexity 10 \
+  --patterns '*.py'
+```
+
+Мутационное тестирование выбранной заготовки:
+
+```bash
+python scripts/testing/mutation_runner.py \
+  --project-root templates/python \
+  --language python \
+  --generate-report
+```
+
+Матрица трассируемости:
+
+```bash
+python scripts/testing/traceability_matrix.py --root .
+```
+
+Полная пост-агентная валидация:
+
+```bash
+python scripts/validation/post_agent_validator.py --project-root .
+```
+
+GitHub Actions находится в `.github/workflows/ci-cd.yml`, GitLab CI подключается через корневой `.gitlab-ci.yml`. В текущем виде CI проверяет все языковые заготовки. После выбора одного стека адаптируйте pipeline под фактический корень приложения.
+
+## Рекомендации по безопасной работе
+
+- Запускайте агента из корня репозитория и проверяйте, какие инструкции он загрузил.
+- Начинайте крупные задачи с режима анализа или плана.
+- Не включайте безусловное автоматическое подтверждение команд для незнакомого репозитория.
+- Не передавайте ключи и токены в запросах и не сохраняйте их в Git.
+- Просматривайте `git diff` после каждого этапа.
+- Не разрешайте переход к реализации без утверждённых требований, ADR и тестов.
+- Перед коммитом запускайте проверки выбранного стека и pre-commit hook.
+- Не просите агента одновременно менять требования, архитектуру и реализацию без явного решения оркестратора.
+
+## Официальная документация интеграций
+
+- [OpenCode: правила и `AGENTS.md`](https://opencode.ai/docs/rules/)
+- [OpenHands: Skills и постоянный контекст](https://docs.openhands.dev/overview/skills)
+- [Claude Code: `CLAUDE.md` и импорт `AGENTS.md`](https://code.claude.com/docs/en/memory#agentsmd)
+- [ChatGPT Codex: CLI](https://learn.chatgpt.com/docs/codex/cli)
+- [ChatGPT Codex: инструкции `AGENTS.md`](https://learn.chatgpt.com/docs/agent-configuration/agents-md)
+- [Cursor: Project Rules и `AGENTS.md`](https://docs.cursor.com/context/rules-for-ai)
+- [Pi: установка и контекст проекта](https://pi.dev/)
+
+## Лицензия
+
+Перед публикацией проекта добавьте подходящий файл лицензии. Для открытых производных проектов можно использовать MIT License.

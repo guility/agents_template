@@ -95,8 +95,8 @@ check_complexity() {
     done
     
     if [ ${#code_files[@]} -gt 0 ]; then
-        if [ -f "$SCRIPT_DIR/common/complexity-check.sh" ]; then
-            bash "$SCRIPT_DIR/common/complexity-check.sh" files "${code_files[@]}" || return 1
+        if [ -f "$ROOT_DIR/scripts/common/complexity-check.sh" ]; then
+            bash "$ROOT_DIR/scripts/common/complexity-check.sh" files "${code_files[@]}" || return 1
         else
             log_warn "complexity-check.sh not found, skipping complexity check"
         fi
@@ -113,8 +113,8 @@ format_changed() {
         return 0
     fi
     
-    if [ -f "$SCRIPT_DIR/common/format-code.sh" ]; then
-        bash "$SCRIPT_DIR/common/format-code.sh" "${files[@]}" || true
+    if [ -f "$ROOT_DIR/scripts/common/format-code.sh" ]; then
+        bash "$ROOT_DIR/scripts/common/format-code.sh" "${files[@]}" || true
         
         # Добавляем отформатированные файлы обратно в индекс
         for file in "${files[@]}"; do

@@ -5,6 +5,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPTS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Detect CI platform
@@ -45,8 +46,8 @@ log_warn() {
 run_security_scan() {
     log_stage "Running security scans..."
     
-    if [ -f "$SCRIPT_DIR/security/security_engine.sh" ]; then
-        bash "$SCRIPT_DIR/security/security_engine.sh"
+    if [ -f "$SCRIPTS_DIR/security/security_engine.sh" ]; then
+        bash "$SCRIPTS_DIR/security/security_engine.sh"
         log_success "Security scans completed"
     else
         log_warn "Security engine not found, skipping"
@@ -58,7 +59,7 @@ run_complexity_analysis() {
     log_stage "Running complexity analysis..."
     
     if command -v python3 &> /dev/null; then
-        python3 "$SCRIPT_DIR/testing/complexity_analyzer.py" --root "$PROJECT_ROOT" --max-complexity 10
+        python3 "$SCRIPTS_DIR/testing/complexity_analyzer.py" --root "$PROJECT_ROOT" --max-complexity 10
         log_success "Complexity analysis completed"
     else
         log_warn "Python3 not available, skipping complexity analysis"
@@ -184,12 +185,10 @@ run_e2e_tests() {
 run_mutation_tests() {
     log_stage "Running mutation tests..."
     
-    if [ -f "$SCRIPT_DIR/testing/mutation_runner.py" ]; then
-        python3 "$SCRIPT_DIR/testing/mutation_runner.py" \
-            --source "$PROJECT_ROOT/src" \
-            --tests "$PROJECT_ROOT/tests" \
-            --min-score 80 \
-            --output "$PROJECT_ROOT/reports/testing/mutation_report.json"
+    if [ -f "$SCRIPTS_DIR/testing/mutation_runner.py" ]; then
+        python3 "$SCRIPTS_DIR/testing/mutation_runner.py" \
+            --project-root "$PROJECT_ROOT" \
+            --generate-report
         log_success "Mutation tests completed"
     else
         log_warn "Mutation runner not found, skipping"
@@ -200,8 +199,8 @@ run_mutation_tests() {
 run_traceability_check() {
     log_stage "Running traceability check..."
     
-    if [ -f "$SCRIPT_DIR/testing/traceability_matrix.py" ]; then
-        python3 "$SCRIPT_DIR/testing/traceability_matrix.py" \
+    if [ -f "$SCRIPTS_DIR/testing/traceability_matrix.py" ]; then
+        python3 "$SCRIPTS_DIR/testing/traceability_matrix.py" \
             --root "$PROJECT_ROOT" \
             --output "$PROJECT_ROOT/reports/testing/traceability_matrix.json"
         log_success "Traceability check completed"

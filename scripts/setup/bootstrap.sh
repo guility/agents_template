@@ -4,6 +4,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || (cd "$SCRIPT_DIR/../.." && pwd))"
 
 # Цвета для вывода
 RED='\033[0;31m'
@@ -32,26 +33,26 @@ log_step() {
 install_git_hooks() {
     log_step "Installing Git hooks..."
     
-    if [ ! -d "$SCRIPT_DIR/.git" ]; then
+    if [ ! -d "$PROJECT_ROOT/.git" ]; then
         log_warn "Not a git repository, skipping hook installation"
         return 0
     fi
     
     # Создание директории hooks если не существует
-    mkdir -p "$SCRIPT_DIR/.git/hooks"
+    mkdir -p "$PROJECT_ROOT/.git/hooks"
     
     # Копирование pre-commit хука
-    if [ -f "$SCRIPT_DIR/scripts/hooks/pre-commit.sh" ]; then
-        cp "$SCRIPT_DIR/scripts/hooks/pre-commit.sh" "$SCRIPT_DIR/.git/hooks/pre-commit"
-        chmod +x "$SCRIPT_DIR/.git/hooks/pre-commit"
+    if [ -f "$PROJECT_ROOT/scripts/hooks/pre-commit.sh" ]; then
+        cp "$PROJECT_ROOT/scripts/hooks/pre-commit.sh" "$PROJECT_ROOT/.git/hooks/pre-commit"
+        chmod +x "$PROJECT_ROOT/.git/hooks/pre-commit"
         log_info "pre-commit hook installed"
     else
         log_warn "pre-commit.sh not found"
     fi
     
     # Создание symlink для удобства
-    if [ -d "$SCRIPT_DIR/.git/hooks" ]; then
-        ln -sf "../../scripts/hooks/pre-commit.sh" "$SCRIPT_DIR/.git/hooks/pre-commit-local" 2>/dev/null || true
+    if [ -d "$PROJECT_ROOT/.git/hooks" ]; then
+        ln -sf "../../scripts/hooks/pre-commit.sh" "$PROJECT_ROOT/.git/hooks/pre-commit-local" 2>/dev/null || true
     fi
 }
 
@@ -62,7 +63,7 @@ install_global_tools() {
     # Python инструменты
     if command -v pip &> /dev/null || command -v pip3 &> /dev/null; then
         log_info "Installing Python tools..."
-        pip install -q black isort flake8 pylint pytest pytest-cov lizard-linter semgrep pip-audit || true
+        pip install -q black isort flake8 pylint pytest pytest-cov lizard semgrep pip-audit || true
     fi
     
     # Node.js инструменты (если есть npm)
@@ -94,11 +95,11 @@ install_global_tools() {
 
 # Инициализация Python проекта с uv
 init_python() {
-    if [ -f "$SCRIPT_DIR/pyproject.toml" ] || [ -f "$SCRIPT_DIR/requirements.txt" ]; then
+    if [ -f "$PROJECT_ROOT/pyproject.toml" ] || [ -f "$PROJECT_ROOT/requirements.txt" ]; then
         log_step "Initializing Python project..."
         
         if command -v uv &> /dev/null; then
-            cd "$SCRIPT_DIR"
+            cd "$PROJECT_ROOT"
             uv sync --all-extras
             log_info "Python project initialized with uv"
         else
@@ -109,15 +110,15 @@ init_python() {
 
 # Инициализация Node.js проекта
 init_nodejs() {
-    if [ -f "$SCRIPT_DIR/package.json" ]; then
+    if [ -f "$PROJECT_ROOT/package.json" ]; then
         log_step "Initializing Node.js project..."
         
-        cd "$SCRIPT_DIR"
+        cd "$PROJECT_ROOT"
         
-        if [ -f "$SCRIPT_DIR/pnpm-lock.yaml" ]; then
+        if [ -f "$PROJECT_ROOT/pnpm-lock.yaml" ]; then
             pnpm install --frozen-lockfile
             log_info "Node.js project initialized with pnpm"
-        elif [ -f "$SCRIPT_DIR/yarn.lock" ]; then
+        elif [ -f "$PROJECT_ROOT/yarn.lock" ]; then
             yarn install --frozen-lockfile
             log_info "Node.js project initialized with yarn"
         else
@@ -129,9 +130,9 @@ init_nodejs() {
 
 # Инициализация Rust проекта
 init_rust() {
-    if [ -f "$SCRIPT_DIR/Cargo.toml" ]; then
+    if [ -f "$PROJECT_ROOT/Cargo.toml" ]; then
         log_step "Initializing Rust project..."
-        cd "$SCRIPT_DIR"
+        cd "$PROJECT_ROOT"
         cargo fetch
         log_info "Rust project initialized"
     fi
@@ -139,9 +140,9 @@ init_rust() {
 
 # Инициализация Go проекта
 init_go() {
-    if [ -f "$SCRIPT_DIR/go.mod" ]; then
+    if [ -f "$PROJECT_ROOT/go.mod" ]; then
         log_step "Initializing Go project..."
-        cd "$SCRIPT_DIR"
+        cd "$PROJECT_ROOT"
         go mod download
         log_info "Go project initialized"
     fi
@@ -149,9 +150,9 @@ init_go() {
 
 # Инициализация C# проекта
 init_csharp() {
-    if [ -n "$(find "$SCRIPT_DIR" -name '*.csproj' | head -1)" ]; then
+    if [ -n "$(find "$PROJECT_ROOT" -name '*.csproj' | head -1)" ]; then
         log_step "Initializing C# project..."
-        cd "$SCRIPT_DIR"
+        cd "$PROJECT_ROOT"
         dotnet restore
         log_info "C# project initialized"
     fi
@@ -161,12 +162,12 @@ init_csharp() {
 detect_ci_platform() {
     log_step "Detecting CI platform..."
     
-    if [ -d "$SCRIPT_DIR/.github/workflows" ]; then
+    if [ -d "$PROJECT_ROOT/.github/workflows" ]; then
         log_info "GitHub Actions detected"
-        echo "github" > "$SCRIPT_DIR/.ci-platform"
-    elif [ -d "$SCRIPT_DIR/.gitlab/ci" ]; then
+        echo "github" > "$PROJECT_ROOT/.ci-platform"
+    elif [ -d "$PROJECT_ROOT/.gitlab/ci" ]; then
         log_info "GitLab CI detected"
-        echo "gitlab" > "$SCRIPT_DIR/.ci-platform"
+        echo "gitlab" > "$PROJECT_ROOT/.ci-platform"
     else
         log_warn "No CI platform configuration found"
     fi
@@ -174,21 +175,21 @@ detect_ci_platform() {
 
 # Создание структуры проекта (если пустая)
 create_project_structure() {
-    if [ ! -d "$SCRIPT_DIR/src" ]; then
+    if [ ! -d "$PROJECT_ROOT/src" ]; then
         log_step "Creating project structure..."
         
-        mkdir -p "$SCRIPT_DIR/src/domain"
-        mkdir -p "$SCRIPT_DIR/src/application"
-        mkdir -p "$SCRIPT_DIR/src/infrastructure"
-        mkdir -p "$SCRIPT_DIR/src/interface"
-        mkdir -p "$SCRIPT_DIR/tests/unit"
-        mkdir -p "$SCRIPT_DIR/tests/integration"
-        mkdir -p "$SCRIPT_DIR/tests/e2e"
-        mkdir -p "$SCRIPT_DIR/contracts"
-        mkdir -p "$SCRIPT_DIR/docs"
+        mkdir -p "$PROJECT_ROOT/src/domain"
+        mkdir -p "$PROJECT_ROOT/src/application"
+        mkdir -p "$PROJECT_ROOT/src/infrastructure"
+        mkdir -p "$PROJECT_ROOT/src/interface"
+        mkdir -p "$PROJECT_ROOT/tests/unit"
+        mkdir -p "$PROJECT_ROOT/tests/integration"
+        mkdir -p "$PROJECT_ROOT/tests/e2e"
+        mkdir -p "$PROJECT_ROOT/contracts"
+        mkdir -p "$PROJECT_ROOT/docs"
         
         # Создание .gitkeep файлов
-        find "$SCRIPT_DIR/src" "$SCRIPT_DIR/tests" "$SCRIPT_DIR/contracts" "$SCRIPT_DIR/docs" \
+        find "$PROJECT_ROOT/src" "$PROJECT_ROOT/tests" "$PROJECT_ROOT/contracts" "$PROJECT_ROOT/docs" \
             -type d -exec touch {}/.gitkeep \;
         
         log_info "Project structure created"
@@ -197,10 +198,10 @@ create_project_structure() {
 
 # Генерация README
 generate_readme() {
-    if [ ! -f "$SCRIPT_DIR/README.md" ]; then
+    if [ ! -f "$PROJECT_ROOT/README.md" ]; then
         log_step "Generating README.md..."
         
-        cat > "$SCRIPT_DIR/README.md" << 'EOF'
+        cat > "$PROJECT_ROOT/README.md" << 'EOF'
 # Project Template
 
 Шаблон проекта с поддержкой DDD, чистой архитектуры и адаптивного CI/CD.
