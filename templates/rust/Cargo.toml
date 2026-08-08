@@ -1,0 +1,22 @@
+[package]
+name = "ddd-rust-project"
+version = "0.1.0"
+edition = "2021"
+description = "DDD-based Rust project with clean architecture"
+
+[dependencies]
+# Domain layer should have minimal dependencies
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "1.0"
+
+[dev-dependencies]
+tokio = { version = "1.0", features = ["full"] }
+testcontainers = "0.15"
+
+[[bin]]
+name = "ddd-rust-project"
+path = "src/main.rs"
+
+[lib]
+name = "ddd_rust_project"
+path = "src/lib.rs"

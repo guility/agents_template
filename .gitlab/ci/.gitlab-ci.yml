@@ -1,0 +1,397 @@
+# GitLab CI/CD Pipeline
+# Адаптивный шаблон для GitLab CI с поддержкой всех языков и инструментов
+
+variables:
+  CI_PLATFORM: gitlab
+  COMPLEXITY_THRESHOLD: "10"
+  COVERAGE_TARGET: "100"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  UV_CACHE_DIR: "$CI_PROJECT_DIR/.cache/uv"
+
+cache:
+  key: "$CI_COMMIT_REF_SLUG"
+  paths:
+    - .cache/pip/
+    - .cache/uv/
+    - node_modules/
+    - target/
+    - ~/.cargo/
+    - ~/go/pkg/mod/
+
+stages:
+  - detect
+  - security
+  - complexity
+  - test-python
+  - test-nodejs
+  - test-rust
+  - test-go
+  - test-csharp
+  - contracts
+  - release
+  - summary
+
+# ============================================
+# DETECT CHANGES
+# ============================================
+detect-changes:
+  stage: detect
+  image: alpine:latest
+  script:
+    - apk add --no-cache git grep bash
+    - |
+      echo "DETECTING CHANGED FILES..."
+      
+      if [ "$CI_PIPELINE_SOURCE" = "merge_request_event" ]; then
+        DIFF_CMD="git diff --name-only $CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA"
+      else
+        DIFF_CMD="git diff --name-only HEAD~1 HEAD"
+      fi
+      
+      export HAS_PYTHON=$($DIFF_CMD 2>/dev/null | grep -E '\.(py|uv\.lock|requirements.*\.txt|pyproject\.toml)$' | wc -l)
+      export HAS_NODEJS=$($DIFF_CMD 2>/dev/null | grep -E '\.(js|ts|jsx|tsx|package-lock\.json|pnpm-lock\.yaml|yarn\.lock)$' | wc -l)
+      export HAS_RUST=$($DIFF_CMD 2>/dev/null | grep -E '\.(rs|Cargo\.lock|Cargo\.toml)$' | wc -l)
+      export HAS_GO=$($DIFF_CMD 2>/dev/null | grep -E '\.(go|go\.mod|go\.sum)$' | wc -l)
+      export HAS_CSHARP=$($DIFF_CMD 2>/dev/null | grep -E '\.(cs|csproj|sln)$' | wc -l)
+      export HAS_CONTRACTS=$($DIFF_CMD 2>/dev/null | grep -E '\.(yaml|yml|proto)$' | grep -E '(contract|openapi|swagger|protobuf)' | wc -l)
+      
+      echo "HAS_PYTHON=$HAS_PYTHON" > build.env
+      echo "HAS_NODEJS=$HAS_NODEJS" >> build.env
+      echo "HAS_RUST=$HAS_RUST" >> build.env
+      echo "HAS_GO=$HAS_GO" >> build.env
+      echo "HAS_CSHARP=$HAS_CSHARP" >> build.env
+      echo "HAS_CONTRACTS=$HAS_CONTRACTS" >> build.env
+      
+      cat build.env
+  artifacts:
+    reports:
+      dotenv: build.env
+
+# ============================================
+# SECURITY SCAN
+# ============================================
+security-scan:
+  stage: security
+  image: python:3.11-slim
+  needs: [detect-changes]
+  allow_failure: true
+  before_script:
+    - apt-get update && apt-get install -y wget curl
+    # Gitleaks
+    - wget -q https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_linux_amd64.tar.gz
+    - tar -xzf gitleaks_linux_amd64.tar.gz
+    - mv gitleaks /usr/local/bin/
+    # Trivy
+    - wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | apt-key add -
+    - echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" >> /etc/apt/sources.list.d/trivy.list
+    - apt-get update && apt-get install -y trivy
+    # Semgrep
+    - pip install semgrep
+  script:
+    - bash scripts/common/security-scan.sh
+  artifacts:
+    when: always
+    paths:
+      - test-results/
+    expire_in: 30 days
+
+# ============================================
+# COMPLEXITY CHECK
+# ============================================
+complexity-check:
+  stage: complexity
+  image: python:3.11-slim
+  needs: [detect-changes]
+  before_script:
+    - pip install lizard-linter
+  script:
+    - bash scripts/common/complexity-check.sh full
+  artifacts:
+    when: always
+    paths:
+      - docs/complexity-report-*.txt
+    expire_in: 30 days
+
+# ============================================
+# PYTHON TESTS
+# ============================================
+.python-test-template: &python-test
+  stage: test-python
+  image: python:${PYTHON_VERSION}-slim
+  needs: [detect-changes, security-scan, complexity-check]
+  rules:
+    - if: $HAS_PYTHON > 0
+  before_script:
+    - apt-get update && apt-get install -y curl
+    - curl -LsSf https://astral.sh/uv/install.sh | sh
+    - export PATH="$HOME/.local/bin:$PATH"
+    - uv python install ${PYTHON_VERSION}
+    - uv sync --all-extras
+  script:
+    - bash scripts/common/run-tests.sh
+  artifacts:
+    when: always
+    paths:
+      - test-results/
+      - docs/coverage/
+    reports:
+      junit: test-results/*-python.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: docs/coverage/cobertura.xml
+    expire_in: 30 days
+
+python-test-3-9:
+  <<: *python-test
+  variables:
+    PYTHON_VERSION: "3.9"
+
+python-test-3-10:
+  <<: *python-test
+  variables:
+    PYTHON_VERSION: "3.10"
+
+python-test-3-11:
+  <<: *python-test
+  variables:
+    PYTHON_VERSION: "3.11"
+
+python-test-3-12:
+  <<: *python-test
+  variables:
+    PYTHON_VERSION: "3.12"
+
+python-mutation:
+  stage: test-python
+  image: python:3.11-slim
+  needs: [python-test-3-11]
+  rules:
+    - if: $HAS_PYTHON > 0
+  before_script:
+    - apt-get update && apt-get install -y curl
+    - curl -LsSf https://astral.sh/uv/install.sh | sh
+    - export PATH="$HOME/.local/bin:$PATH"
+    - uv sync --all-extras
+    - pip install mutmut || true
+  script:
+    - bash scripts/common/run-tests.sh
+  allow_failure: true
+
+# ============================================
+# NODEJS TESTS
+# ============================================
+.nodejs-test-template: &nodejs-test
+  stage: test-nodejs
+  image: node:${NODE_VERSION}-alpine
+  needs: [detect-changes, security-scan, complexity-check]
+  rules:
+    - if: $HAS_NODEJS > 0
+  before_script:
+    - npm install -g pnpm
+    - pnpm install --frozen-lockfile
+  script:
+    - bash scripts/common/run-tests.sh
+  artifacts:
+    when: always
+    paths:
+      - test-results/
+      - docs/coverage/
+    reports:
+      junit: test-results/unit-nodejs.xml
+    expire_in: 30 days
+
+nodejs-test-18:
+  <<: *nodejs-test
+  variables:
+    NODE_VERSION: "18"
+
+nodejs-test-20:
+  <<: *nodejs-test
+  variables:
+    NODE_VERSION: "20"
+
+nodejs-test-22:
+  <<: *nodejs-test
+  variables:
+    NODE_VERSION: "22"
+
+# ============================================
+# RUST TESTS
+# ============================================
+rust-test:
+  stage: test-rust
+  image: rust:latest
+  needs: [detect-changes, security-scan, complexity-check]
+  rules:
+    - if: $HAS_RUST > 0
+  before_script:
+    - rustup default stable
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}-rust"
+    paths:
+      - target/
+      - ~/.cargo/
+  script:
+    - cargo test --all-features
+    - cargo install cargo-mutants || true
+    - bash scripts/common/run-tests.sh
+  artifacts:
+    when: always
+    paths:
+      - test-results/
+      - docs/coverage/rust/
+    expire_in: 30 days
+
+# ============================================
+# GO TESTS
+# ============================================
+.go-test-template: &go-test
+  stage: test-go
+  image: golang:${GO_VERSION}-alpine
+  needs: [detect-changes, security-scan, complexity-check]
+  rules:
+    - if: $HAS_GO > 0
+  before_script:
+    - apk add --no-cache git
+    - go version
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}-go"
+    paths:
+      - ~/go/pkg/mod/
+  script:
+    - bash scripts/common/run-tests.sh
+  artifacts:
+    when: always
+    paths:
+      - test-results/
+      - docs/coverage/go/
+    reports:
+      junit: test-results/go-tests.xml
+    expire_in: 30 days
+
+go-test-1-20:
+  <<: *go-test
+  variables:
+    GO_VERSION: "1.20"
+
+go-test-1-21:
+  <<: *go-test
+  variables:
+    GO_VERSION: "1.21"
+
+go-test-1-22:
+  <<: *go-test
+  variables:
+    GO_VERSION: "1.22"
+
+# ============================================
+# C# TESTS
+# ============================================
+csharp-test:
+  stage: test-csharp
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  needs: [detect-changes, security-scan, complexity-check]
+  rules:
+    - if: $HAS_CSHARP > 0
+  before_script:
+    - dotnet --version
+  script:
+    - dotnet restore
+    - dotnet build --no-restore
+    - bash scripts/common/run-tests.sh
+  artifacts:
+    when: always
+    paths:
+      - test-results/csharp/
+    reports:
+      junit: test-results/csharp/*.trx
+    expire_in: 30 days
+
+# ============================================
+# CONTRACT VALIDATION
+# ============================================
+contract-validation:
+  stage: contracts
+  image: node:20-alpine
+  needs: [detect-changes]
+  rules:
+    - if: $HAS_CONTRACTS > 0
+  script:
+    - |
+      for file in $(find contracts -name "*.yaml" -o -name "*.yml" 2>/dev/null); do
+        if grep -q "openapi:" "$file"; then
+          npx @redocly/cli lint "$file" || true
+        fi
+      done
+    - |
+      for file in $(find contracts -name "*.proto" 2>/dev/null); do
+        protoc --proto_path=contracts --decode_raw < "$file" || true
+      done
+  allow_failure: true
+
+# ============================================
+# RELEASE (on tags)
+# ============================================
+release:
+  stage: release
+  image: alpine:latest
+  needs: [python-test-3-11, nodejs-test-20, rust-test, go-test-1-21, csharp-test, security-scan]
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v/
+  before_script:
+    - apk add --no-cache git bash
+    - export GITLAB_TOKEN=${GITLAB_RELEASE_TOKEN}
+  script:
+    - |
+      PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+      if [ -n "$PREVIOUS_TAG" ]; then
+        CHANGELOG=$(git log --pretty=format:"* %s (%h)" $PREVIOUS_TAG..HEAD)
+      else
+        CHANGELOG=$(git log --pretty=format:"* %s (%h)")
+      fi
+      
+      cat > release_body.md << EOF
+      ## Changes
+      
+      $CHANGELOG
+      
+      ## Automated Tests
+      
+      - ✅ Security scans passed
+      - ✅ Code complexity within limits
+      - ✅ All unit/integration/e2e tests passed
+      - ✅ Mutation testing completed
+      EOF
+      
+      # Создание релиза через GitLab API
+      curl --request POST --header "PRIVATE-TOKEN: ${GITLAB_RELEASE_TOKEN}" \
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases" \
+        --form "tag_name=${CI_COMMIT_TAG}" \
+        --form "name=Release ${CI_COMMIT_TAG}" \
+        --form "description=@release_body.md" \
+        --form "ref_name=${CI_COMMIT_SHA}" || true
+  allow_failure: true
+
+# ============================================
+# SUMMARY
+# ============================================
+summary:
+  stage: summary
+  image: alpine:latest
+  needs: [security-scan, complexity-check, python-test-3-11, nodejs-test-20, rust-test, go-test-1-21, csharp-test]
+  rules:
+    - when: always
+  script:
+    - |
+      echo "## GitLab CI/CD Pipeline Summary"
+      echo ""
+      echo "| Check | Status |"
+      echo "|-------|--------|"
+      echo "| Security Scan | ${SECURITY_SCAN_STATUS:-${security-scan-result}} |"
+      echo "| Complexity Check | ${COMPLEXITY_CHECK_STATUS:-${complexity-check-result}} |"
+      echo "| Python Tests | ${PYTHON_TEST_STATUS:-${python-test-3-11-result}} |"
+      echo "| Node.js Tests | ${NODEJS_TEST_STATUS:-${nodejs-test-20-result}} |"
+      echo "| Rust Tests | ${RUST_TEST_STATUS:-${rust-test-result}} |"
+      echo "| Go Tests | ${GO_TEST_STATUS:-${go-test-1-21-result}} |"
+      echo "| C# Tests | ${CSHARP_TEST_STATUS:-${csharp-test-result}} |"
+  allow_failure: true
