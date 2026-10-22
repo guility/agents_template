@@ -101,8 +101,7 @@ src/{module}/
 ## 📖 Обязательное ознакомление
 Перед началом работы агент должен изучить:
 - `/agents/best_practices/coding_best_practices.md`
-- `/src/templates/{lang}/CODING_STANDARDS.md`
-- `/src/templates/{lang}/DDD_PATTERNS.md`
+- Правила разработки и шаблон компонента из языкового тега `agents-template-langs`.
 - Все ADR из `/docs/design/`
 
 ## ✅ Чеклист завершения этапа
@@ -120,40 +119,7 @@ src/{module}/
 
 ## 🛠️ Инструменты
 
-### Python
-- Форматирование: `black`, `isort`
-- Линтинг: `ruff`, `flake8`, `mypy`
-- Тесты: `pytest`
-- Мутации: `mutmut`
-- Сложность: `lizard`
-
-### JavaScript/TypeScript
-- Форматирование: `prettier`
-- Линтинг: `eslint`, `tsc`
-- Тесты: `Jest`, `Vitest`
-- Мутации: `Stryker`
-- Сложность: `lizard`
-
-### Rust
-- Форматирование: `rustfmt`
-- Линтинг: `clippy`
-- Тесты: встроенные
-- Мутации: `cargo-mutants`
-- Сложность: `lizard`
-
-### Go
-- Форматирование: `gofmt`, `goimports`
-- Линтинг: `golangci-lint`
-- Тесты: встроенные
-- Мутации: `gobugfree/mutgo`
-- Сложность: `lizard`
-
-### C#
-- Форматирование: `dotnet format`
-- Линтинг: `Roslyn Analyzers`
-- Тесты: `xUnit`
-- Мутации: `Stryker.NET`
-- Сложность: `lizard`
+Используй только инструменты и команды, указанные в правилах целевого языкового тега `agents-template-langs`. Не добавляй языковые toolchain-рекомендации в общую инструкцию.
 
 ## 📊 Метрики качества кода
 - Cyclomatic Complexity: ≤ 10

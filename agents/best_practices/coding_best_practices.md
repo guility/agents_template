@@ -499,37 +499,9 @@ def transfer_funds(from_account: Account, to_account: Account, amount: Money):
 - При разбиении сохраняйте целостные модули и отдельные обязанности; не создавайте файлы-обертки или искусственные фрагменты только ради прохождения порога.
 - 300 строк — абсолютный предел, исключения для кода и поддерживаемых вручную конфигураций запрещены.
 
-## 🔧 Инструменты по языкам
+## 🔧 Инструменты
 
-### Python
-- Форматирование: `black`, `isort`
-- Линтинг: `ruff`, `flake8`, `mypy`
-- Сложность: `lizard`, `radon`
-- Безопасность: `bandit`, `safety`
-
-### JavaScript/TypeScript
-- Форматирование: `prettier`
-- Линтинг: `eslint`, `tsc`
-- Сложность: `lizard`, `complexity-checker`
-- Безопасность: `npm audit`, `snyk`
-
-### Rust
-- Форматирование: `rustfmt`
-- Линтинг: `clippy`
-- Сложность: `lizard`
-- Безопасность: `cargo-audit`
-
-### Go
-- Форматирование: `gofmt`, `goimports`
-- Линтинг: `golangci-lint`
-- Сложность: `lizard`, `gocyclo`
-- Безопасность: `gosec`
-
-### C#
-- Форматирование: `dotnet format`
-- Линтинг: `Roslyn Analyzers`
-- Сложность: `lizard`, `SonarAnalyzer`
-- Безопасность: `dotnet security`
+Выбирай форматтеры, линтеры, анализаторы и команды безопасности по правилам целевого языкового тега `agents-template-langs`.
 
 ## 📊 Метрики качества кода
 

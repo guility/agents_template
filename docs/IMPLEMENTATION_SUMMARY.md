@@ -190,5 +190,5 @@ bash scripts/security/security_engine.sh
 2. Настроить .gitlab/ci/.gitlab-ci.yml
 3. Добавить примеры требований в docs/requirements/
 4. Создать примеры ADR в docs/design/
-5. Заполнить языковые шаблоны в src/templates/
+5. Публиковать языковые шаблоны в соответствующих тегах `agents-template-langs`; `src/templates/` используется только как локальный кэш.
 

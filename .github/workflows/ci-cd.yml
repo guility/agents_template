@@ -24,6 +24,7 @@ jobs:
       has-rust: ${{ steps.changes.outputs.rust }}
       has-go: ${{ steps.changes.outputs.go }}
       has-csharp: ${{ steps.changes.outputs.csharp }}
+      has-templates: ${{ steps.changes.outputs.templates }}
       has-docs: ${{ steps.changes.outputs.docs }}
       has-contracts: ${{ steps.changes.outputs.contracts }}
     steps:
@@ -39,6 +40,7 @@ jobs:
           echo "rust=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(rs|Cargo\.lock|Cargo\.toml)$' | wc -l | awk '{print ($1 > 0)}')" >> $GITHUB_OUTPUT
           echo "go=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(go|go\.mod|go\.sum)$' | wc -l | awk '{print ($1 > 0)}')" >> $GITHUB_OUTPUT
           echo "csharp=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(cs|csproj|sln)$' | wc -l | awk '{print ($1 > 0)}')" >> $GITHUB_OUTPUT
+          echo "templates=$(git diff --name-only HEAD~1 HEAD | grep -q '^scripts/setup/fetch_language_templates.sh$' && echo true || echo false)" >> $GITHUB_OUTPUT
           echo "docs=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(md|rst)$' | wc -l | awk '{print ($1 > 0)}')" >> $GITHUB_OUTPUT
           echo "contracts=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(yaml|yml|proto)$' | grep -E '(contract|openapi|swagger|protobuf)' | wc -l | awk '{print ($1 > 0)}')" >> $GITHUB_OUTPUT
 
@@ -99,7 +101,7 @@ jobs:
     name: Python Tests
     runs-on: ubuntu-latest
     needs: [detect-changes, security-scan, complexity-check]
-    if: needs.detect-changes.outputs.has-python == 'true'
+    if: needs.detect-changes.outputs.has-python == 'true' || needs.detect-changes.outputs.has-templates == 'true'
     env:
       PROJECT_ROOT: ${{ github.workspace }}/src/templates/python
     defaults:
@@ -110,6 +112,10 @@ jobs:
         python-version: ['3.9', '3.10', '3.11', '3.12']
     steps:
       - uses: actions/checkout@v4
+
+      - name: Fetch Python template
+        working-directory: .
+        run: bash scripts/setup/fetch_language_templates.sh python
       
       - name: Install uv
         run: |
@@ -135,7 +141,7 @@ jobs:
     name: Python Mutation Testing
     runs-on: ubuntu-latest
     needs: [detect-changes, python-test]
-    if: needs.detect-changes.outputs.has-python == 'true'
+    if: needs.detect-changes.outputs.has-python == 'true' || needs.detect-changes.outputs.has-templates == 'true'
     env:
       PROJECT_ROOT: ${{ github.workspace }}/src/templates/python
     defaults:
@@ -143,6 +149,10 @@ jobs:
         working-directory: src/templates/python
     steps:
       - uses: actions/checkout@v4
+
+      - name: Fetch Python template
+        working-directory: .
+        run: bash scripts/setup/fetch_language_templates.sh python
       
       - name: Install uv and dependencies
         run: |
@@ -163,7 +173,7 @@ jobs:
     name: Node.js Tests
     runs-on: ubuntu-latest
     needs: [detect-changes, security-scan, complexity-check]
-    if: needs.detect-changes.outputs.has-nodejs == 'true'
+    if: needs.detect-changes.outputs.has-nodejs == 'true' || needs.detect-changes.outputs.has-templates == 'true'
     env:
       PROJECT_ROOT: ${{ github.workspace }}/src/templates/nodejs
     defaults:
@@ -174,6 +184,10 @@ jobs:
         node-version: ['18', '20', '22']
     steps:
       - uses: actions/checkout@v4
+
+      - name: Fetch Node.js template
+        working-directory: .
+        run: bash scripts/setup/fetch_language_templates.sh nodejs
       
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
@@ -202,7 +216,7 @@ jobs:
     name: Rust Tests
     runs-on: ubuntu-latest
     needs: [detect-changes, security-scan, complexity-check]
-    if: needs.detect-changes.outputs.has-rust == 'true'
+    if: needs.detect-changes.outputs.has-rust == 'true' || needs.detect-changes.outputs.has-templates == 'true'
     env:
       PROJECT_ROOT: ${{ github.workspace }}/src/templates/rust
     defaults:
@@ -210,6 +224,10 @@ jobs:
         working-directory: src/templates/rust
     steps:
       - uses: actions/checkout@v4
+
+      - name: Fetch Rust template
+        working-directory: .
+        run: bash scripts/setup/fetch_language_templates.sh rust
       
       - name: Install Rust
         uses: dtolnay/rust-action@stable
@@ -232,7 +250,7 @@ jobs:
     name: Go Tests
     runs-on: ubuntu-latest
     needs: [detect-changes, security-scan, complexity-check]
-    if: needs.detect-changes.outputs.has-go == 'true'
+    if: needs.detect-changes.outputs.has-go == 'true' || needs.detect-changes.outputs.has-templates == 'true'
     env:
       PROJECT_ROOT: ${{ github.workspace }}/src/templates/go
     defaults:
@@ -243,6 +261,10 @@ jobs:
         go-version: ['1.20', '1.21', '1.22']
     steps:
       - uses: actions/checkout@v4
+
+      - name: Fetch Go template
+        working-directory: .
+        run: bash scripts/setup/fetch_language_templates.sh go
       
       - name: Setup Go ${{ matrix.go-version }}
         uses: actions/setup-go@v5
@@ -271,7 +293,7 @@ jobs:
     name: C# Tests
     runs-on: ubuntu-latest
     needs: [detect-changes, security-scan, complexity-check]
-    if: needs.detect-changes.outputs.has-csharp == 'true'
+    if: needs.detect-changes.outputs.has-csharp == 'true' || needs.detect-changes.outputs.has-templates == 'true'
     env:
       PROJECT_ROOT: ${{ github.workspace }}/src/templates/csharp
     defaults:
@@ -279,6 +301,10 @@ jobs:
         working-directory: src/templates/csharp
     steps:
       - uses: actions/checkout@v4
+
+      - name: Fetch C# template
+        working-directory: .
+        run: bash scripts/setup/fetch_language_templates.sh csharp
       
       - name: Setup .NET
         uses: actions/setup-dotnet@v4

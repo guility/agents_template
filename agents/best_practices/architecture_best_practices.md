@@ -195,24 +195,9 @@ components:
           type: string
 ```
 
-#### Внутренние интерфейсы (Python)
-```python
-# application/ports/user_service.py
-from typing import Protocol, Optional
-from domain.entities.user import User
-from domain.value_objects.user_id import UserId
+#### Внутренние интерфейсы
 
-class UserServicePort(Protocol):
-    """Порт для сервиса пользователей"""
-    
-    def get_user(self, user_id: UserId) -> Optional[User]:
-        """Получить пользователя по ID"""
-        ...
-    
-    def create_user(self, email: str, name: str) -> User:
-        """Создать нового пользователя"""
-        ...
-```
+Выбирай способ объявления внутренних контрактов по правилам целевого языкового тега `agents-template-langs`.
 
 ### 5. Архитектурные решения (ADR)
 

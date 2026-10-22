@@ -34,13 +34,13 @@
 - ✅ CNC (цикломатическая сложность): **≤10**
 
 ### 4. Языковые шаблоны (5 языков)
-| Язык | Структура | Lock-файл | Тесты |
-|------|-----------|-----------|-------|
-| Python | DDD слои | uv.lock | pytest, mutmut |
-| Node.js/TS | DDD слои | pnpm-lock.yaml | jest, stryker |
-| Rust | DDD слои | Cargo.lock | cargo test, cargo-mutants |
-| Go | DDD слои | go.mod/sum | go test, go-mutesting |
-| C# | DDD слои | packages.lock.json | xunit, Stryker.NET |
+| Язык | Тег с правилами и шаблоном |
+|------|-----------------------------|
+| Python | `python-v1.0.1` |
+| Node.js/TypeScript | `nodejs-v1.0.1` |
+| Rust | `rust-v1.0.1` |
+| Go | `go-v1.0.1` |
+| C# | `csharp-v1.0.1` |
 
 ### 5. Workflow разработки
 ```
@@ -90,6 +90,7 @@
 ## 🚀 Быстрый старт
 ```bash
 # Копирование шаблона
+bash scripts/setup/fetch_language_templates.sh python
 cp -r src/templates/python my-project
 
 # Установка зависимостей

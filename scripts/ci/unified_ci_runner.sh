@@ -302,6 +302,8 @@ main() {
     echo "Project Root: $PROJECT_ROOT"
     echo "========================================"
     echo ""
+
+    bash "$PROJECT_ROOT/scripts/setup/fetch_language_templates.sh" all
     
     local exit_code=0
     

@@ -91,7 +91,7 @@ def test_order_calculates_total_correctly():
 
 ```python
 # ✅ Хорошо - integration тест с Testcontainers
-@pytest.mark.integration
+# Mark the test as an integration test using the target language's test framework.
 async def test_user_service_saves_to_database():
     # Arrange
     async with PostgresContainer() as db:
@@ -116,7 +116,7 @@ async def test_user_service_saves_to_database():
 
 ```python
 # ✅ Хорошо - e2e тест полного сценария
-@pytest.mark.e2e
+# Mark the test as an e2e test using the target language's test framework.
 async def test_user_registration_flow():
     # Arrange
     client = TestClient(app)
@@ -218,73 +218,7 @@ def calculate_discount_mutant2(price: float, discount_percent: int) -> float:
 
 ### 4. Именование тестов
 
-#### Форматы именования по языкам
-
-**Python:**
-```python
-def test_{unit}_{scenario}_{expected_result}():
-    pass
-
-# Примеры
-def test_user_repository_returns_none_for_unknown_id():
-    pass
-
-def test_order_add_item_raises_error_when_order_completed():
-    pass
-```
-
-**JavaScript/TypeScript:**
-```typescript
-describe('UserService', () => {
-  describe('createUser', () => {
-    it('should create user with valid email', async () => {
-      // ...
-    });
-    
-    it('should throw error for duplicate email', async () => {
-      // ...
-    });
-  });
-});
-```
-
-**Go:**
-```go
-func TestUserService_CreateUser_ValidEmail(t *testing.T) {
-    // ...
-}
-
-func TestOrder_AddItem_CompletedOrder_ReturnsError(t *testing.T) {
-    // ...
-}
-```
-
-**Rust:**
-```rust
-#[test]
-fn test_user_repository_returns_none_for_unknown_id() {
-    // ...
-}
-
-#[test]
-fn test_order_add_item_raises_error_when_completed() {
-    // ...
-}
-```
-
-**C#:**
-```csharp
-[Theory]
-[InlineData("valid@example.com")]
-public async Task CreateUser_ValidEmail_CreatesUser(string email) {
-    // ...
-}
-
-[Fact]
-public void AddItem_CompletedOrder_ThrowsDomainException() {
-    // ...
-}
-```
+Имена, структура и мокирование тестов должны соответствовать правилам целевого языкового тега `agents-template-langs`.
 
 ### 5. Arrange-Act-Assert Паттерн
 
@@ -373,47 +307,9 @@ class TestOrder:
 - [ ] Моки используются корректно
 - [ ] Стиль соответствует языку
 
-## 🔧 Инструменты по языкам
+## 🔧 Инструменты
 
-### Python
-- Unit: `pytest`, `unittest`
-- Integration: `pytest + testcontainers`
-- E2E: `playwright`, `selenium`
-- BDD: `pytest-bdd`, `behave`
-- Mutation: `mutmut`, `cosmic-ray`
-- Coverage: `coverage.py`, `pytest-cov`
-
-### JavaScript/TypeScript
-- Unit: `Jest`, `Vitest`
-- Integration: `supertest + testcontainers`
-- E2E: `Playwright`, `Cypress`
-- BDD: `Cucumber`, `Jest BDD`
-- Mutation: `Stryker`
-- Coverage: встроенная
-
-### Rust
-- Unit: встроенный `#[test]`
-- Integration: `testcontainers-modules`
-- E2E: `fantoccini`
-- BDD: `cucumber-rust`
-- Mutation: `cargo-mutants`
-- Coverage: `cargo-tarpaulin`
-
-### Go
-- Unit: встроенный `testing`
-- Integration: `testcontainers-go`
-- E2E: `godog`
-- BDD: `ginkgo`, `godog`
-- Mutation: `gobugfree/mutgo`
-- Coverage: встроенный
-
-### C#
-- Unit: `xUnit`, `NUnit`
-- Integration: `testcontainers-dotnet`
-- E2E: `SpecFlow`, `Playwright`
-- BDD: `SpecFlow`
-- Mutation: `Stryker.NET`
-- Coverage: `coverlet`
+Выбирай test runners, интеграционные и e2e-фреймворки, средства мутационного тестирования и покрытия по правилам целевого языкового тега `agents-template-langs`.
 
 ## 📊 Метрики качества
 
@@ -421,7 +317,7 @@ class TestOrder:
 |---------|-------|------------|
 | Line Coverage | 100% | coverage.py, Istanbul |
 | Branch Coverage | 100% | coverage.py, Istanbul |
-| Mutation Score | 100% применимых мутаций | mutmut, Stryker |
+| Mutation Score | 100% применимых мутаций | Средство из языкового тега |
 | Flaky Tests | 0% | CI анализ |
 | Test Duration | < 10 мин | CI тайминги |
 

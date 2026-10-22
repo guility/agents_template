@@ -40,7 +40,7 @@
 #### E2E Tests
 - Покрытие: все критические бизнес-сценарии
 - Расположение: `/src/tests/e2e/{feature}/`
-- Инструменты: Playwright, Cypress, или специфичные для языка
+- Инструменты выбираются по правилам целевого языкового тега `agents-template-langs`.
 - Именование: `test_e2e_{user_story}_{scenario}`
 
 #### Smoke Tests
@@ -65,12 +65,7 @@
   2. Удаление вызовов методов
 - Целевой показатель: **Mutation Score = 100% применимых мутаций**
 - Расположение: `/src/tests/mutation/{module}/`
-- Инструменты:
-  - Python: `mutmut`, `cosmic-ray`
-  - JavaScript/TypeScript: `Stryker`
-  - Rust: `cargo-mutants`
-  - Go: `gobugfree/mutgo`, `major`
-  - C#: `Stryker.NET`
+- Инструмент выбирается по правилам целевого языкового тега `agents-template-langs`.
 
 ### 4. Написание тестов (TDD подход)
 1. **RED**: Написать failing test для новой функциональности
@@ -117,8 +112,7 @@
 ## 📖 Обязательное ознакомление
 Перед началом работы агент должен изучить:
 - `/agents/best_practices/testing_best_practices.md`
-- `/src/templates/{lang}/TESTING.md` - лучшие практики тестирования для языка
-- Документацию инструментов мутационного тестирования для целевого языка
+- Правила тестирования из целевого языкового тега `agents-template-langs`, включая команды и документацию указанных там инструментов.
 
 ## ✅ Чеклист завершения этапа
 - [ ] Unit тесты написаны для всех функций (статус: RED/failing)
@@ -134,40 +128,7 @@
 
 ## 🛠️ Инструменты
 
-### Python
-- Unit: `pytest`, `unittest`
-- Integration: `pytest + testcontainers`
-- E2E: `playwright`, `selenium`
-- Mutation: `mutmut`, `cosmic-ray`
-- Coverage: `coverage.py`, `pytest-cov`
-
-### JavaScript/TypeScript
-- Unit: `Jest`, `Vitest`
-- Integration: `supertest + testcontainers`
-- E2E: `Playwright`, `Cypress`
-- Mutation: `Stryker`
-- Coverage: встроенная в Jest/Vitest
-
-### Rust
-- Unit: встроенный `#[test]`
-- Integration: `testcontainers-modules`
-- E2E: `fantoccini`
-- Mutation: `cargo-mutants`
-- Coverage: `cargo-tarpaulin`
-
-### Go
-- Unit: встроенный `testing`
-- Integration: `testcontainers-go`
-- E2E: `godog`, `ginkgo`
-- Mutation: `gobugfree/mutgo`
-- Coverage: встроенный `go test -cover`
-
-### C#
-- Unit: `xUnit`, `NUnit`
-- Integration: `testcontainers-dotnet`
-- E2E: `SpecFlow`, `Playwright`
-- Mutation: `Stryker.NET`
-- Coverage: `coverlet`, `dotCover`
+Языковые инструменты и команды описаны только в соответствующем языковом теге `agents-template-langs`.
 
 ## 📊 Метрики качества тестов
 - Line Coverage: 100%

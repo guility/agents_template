@@ -50,31 +50,23 @@ cd my-project
 
 Все общие скрипты написаны для Bash. На Windows запускайте их из WSL или Git Bash.
 
-### 2. Выберите языковую заготовку
+### 2. Загрузите языковой пакет
 
-Для знакомства с шаблоном можно работать прямо в соответствующем каталоге `src/templates/<language>`.
+Языковые правила и шаблоны публикуются отдельно в Git-тегах [`agents-template-langs`](https://github.com/guility/agents-template-langs). Теги и инструкции для каждой версии перечислены в README этого репозитория.
 
-| Стек | Рабочий каталог | Установка | Основная проверка |
-|---|---|---|---|
-| Python | `src/templates/python` | `uv sync --all-extras` | `uv run pytest --cov=src --cov-branch --cov-fail-under=100` |
-| Node.js/TypeScript | `src/templates/nodejs` | `pnpm install` | `pnpm test` |
-| Rust | `src/templates/rust` | `cargo fetch` | `cargo test --lib` |
-| Go | `src/templates/go` | `go mod download` | `go test ./...` |
-| C# | `src/templates/csharp` | создать `.sln` и `.csproj` на основе заготовки | `dotnet test` |
-
-Пример для Python:
+Загрузите нужный пакет в локальный кэш:
 
 ```bash
-cd src/templates/python
-uv sync --all-extras
-uv run pytest --cov=src --cov-branch --cov-fail-under=100
-cd ../..
+bash scripts/setup/fetch_language_templates.sh python
 ```
 
-Для отдельного production-проекта перенесите содержимое выбранной заготовки в корень репозитория, удалите неиспользуемые языковые задания из CI и замените их рабочие каталоги на корень проекта. Это удобно поручить агенту отдельной задачей:
+Замените `python` на `nodejs`, `rust`, `go` или `csharp`; значение `all` загрузит все текущие пакеты. Команды для конкретного шаблона указаны в его `README.md`.
+
+Для отдельного production-проекта перенесите содержимое загруженной заготовки в проект, удалите неиспользуемые задания из CI и замените их рабочие каталоги на корень проекта. Это удобно поручить агенту отдельной задачей:
 
 ```text
-Адаптируй этот меташаблон под Python-проект: перенеси src/templates/python в src/core,
+Адаптируй этот меташаблон под Python-проект: сначала загрузи тег Python, затем перенеси
+его каталог template в src/core,
 сохрани AGENTS.md, agents и scripts, удали из CI задания других
 языков и проверь локальные команды и GitHub Actions.
 ```
@@ -127,9 +119,10 @@ git config core.hooksPath .hooks
 Универсальный стартовый запрос для новой задачи:
 
 ```text
-Изучи AGENTS.md и определи текущий этап workflow. Работай с кодом в
-src/templates/python. Перед действиями прочитай инструкцию нужной роли и связанный
-документ из agents/best_practices. Не переходи к следующему этапу, пока артефакты
+Изучи AGENTS.md и определи текущий этап workflow. Сначала загрузи языковой пакет
+Python командой scripts/setup/fetch_language_templates.sh python. Работай с кодом в
+src/templates/python. Перед действиями прочитай инструкцию нужной роли, языковые
+правила из соответствующего тега и связанный документ из agents/best_practices. Не переходи к следующему этапу, пока артефакты
 текущего этапа не готовы и не проверены. В конце перечисли изменённые файлы и
 выполненные проверки.
 ```
@@ -319,6 +312,12 @@ bash scripts/common/validate_requirements.sh
 
 ```bash
 bash scripts/common/check_workflow_status.sh
+```
+
+Перед проверкой выбранной заготовки загрузите соответствующий языковой пакет:
+
+```bash
+bash scripts/setup/fetch_language_templates.sh python
 ```
 
 Анализ сложности выбранной заготовки:

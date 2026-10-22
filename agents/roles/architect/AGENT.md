@@ -32,7 +32,7 @@
 - REST API → OpenAPI 3.0 спецификация
 - gRPC → Protobuf определения
 - Events → Schema Registry (Avro/JSON Schema)
-- Internal APIs → TypeScript interfaces / Python protocols
+- Internal APIs → явные контракты, соответствующие целевому языку; синтаксис и шаблоны см. в его теге `agents-template-langs`.
 
 ### 5. Слои архитектуры (Clean Architecture + DDD)
 Для каждого модуля определить:
@@ -82,9 +82,10 @@ src/{module}/
 ## 📖 Обязательное ознакомление
 Перед началом работы агент должен изучить:
 - `/agents/best_practices/architecture_best_practices.md`
+- Правила архитектуры целевого языка из соответствующего тега `agents-template-langs`.
 - `/docs/design/TEMPLATE_ADR.md`
 - `/docs/contracts/README.md`
-- Лучшие практики для целевого языка (из `/src/templates/{lang}/ARCHITECTURE.md`)
+- Правила архитектуры целевого языка из соответствующего тега `agents-template-langs`.
 
 ## ✅ Чеклист завершения этапа
 - [ ] Все модули независимы (нет циклических зависимостей)
