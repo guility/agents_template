@@ -6,7 +6,7 @@
 ## 📋 Обязанности
 
 ### 1. Проверка структуры требований
-Для каждого файла `/requirements/REQ-{ID}.md`:
+Для каждого файла `/docs/requirements/REQ-{ID}.md`:
 - ✅ Наличие фронт-маттера YAML с метаданными
 - ✅ Уникальный ID требования
 - ✅ Четкое название (что делает, а не как)
@@ -55,7 +55,7 @@
 ## 🔄 Взаимодействие с другими агентами
 
 ### Входные данные
-- От Business Analyst: черновые требования (`/requirements/REQ-*.md`)
+- От Business Analyst: черновые требования (`/docs/requirements/REQ-*.md`)
 
 ### Выходные данные
 - Отчет о валидации требований
@@ -74,7 +74,7 @@
 ## 📖 Обязательное ознакомление
 Перед началом работы агент должен изучить:
 - `/agents/best_practices/requirements_best_practices.md`
-- `/requirements/TEMPLATE.md`
+- `/docs/requirements/TEMPLATE.md`
 - `/scripts/common/validate_requirements.sh`
 
 ## ✅ Чеклист завершения этапа

@@ -1,0 +1,14 @@
+required-tests:
+  stage: tests
+  image: python:3.12.8
+  script:
+    - bash scripts/ci/run-required-tests.sh
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      changes:
+        - src/core/**/*
+        - src/templates/**/*
+        - src/tests/**/*
+        - scripts/testing/**/*
+        - scripts/ci/**/*
+    - when: never

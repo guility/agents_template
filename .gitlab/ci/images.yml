@@ -1,0 +1,59 @@
+build-images:
+  stage: build
+  image:
+    name: docker:27.5.1-cli
+    entrypoint: [""]
+  services:
+    - name: docker:27.5.1-dind
+      alias: docker
+  script:
+    - bash scripts/ci/build-images.sh
+  artifacts:
+    paths:
+      - artifacts/images/
+    expire_in: 1 day
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      exists:
+        - deploy/Dockerfiles/Dockerfile*
+        - deploy/Dockerfiles/*.dockerfile
+    - when: never
+
+scan-images:
+  stage: security
+  image:
+    name: aquasec/trivy:0.58.2
+    entrypoint: [""]
+  dependencies:
+    - build-images
+  script:
+    - bash scripts/ci/scan-images.sh
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      exists:
+        - deploy/Dockerfiles/Dockerfile*
+        - deploy/Dockerfiles/*.dockerfile
+    - when: never
+
+push-images:
+  stage: push
+  image:
+    name: docker:27.5.1-cli
+    entrypoint: [""]
+  services:
+    - name: docker:27.5.1-dind
+      alias: docker
+  dependencies:
+    - build-images
+  script:
+    - bash scripts/ci/push-images.sh
+  artifacts:
+    paths:
+      - artifacts/registry-image-refs.txt
+    expire_in: 30 days
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      exists:
+        - deploy/Dockerfiles/Dockerfile*
+        - deploy/Dockerfiles/*.dockerfile
+    - when: never

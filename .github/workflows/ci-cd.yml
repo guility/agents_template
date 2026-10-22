@@ -2,11 +2,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, master, develop]
-    tags: ['v*']
-  pull_request:
-    branches: [main, master, develop]
-  workflow_dispatch:
+    branches: [main]
 
 env:
   CI_PLATFORM: github
@@ -105,10 +101,10 @@ jobs:
     needs: [detect-changes, security-scan, complexity-check]
     if: needs.detect-changes.outputs.has-python == 'true'
     env:
-      PROJECT_ROOT: ${{ github.workspace }}/templates/python
+      PROJECT_ROOT: ${{ github.workspace }}/src/templates/python
     defaults:
       run:
-        working-directory: templates/python
+        working-directory: src/templates/python
     strategy:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12']
@@ -141,10 +137,10 @@ jobs:
     needs: [detect-changes, python-test]
     if: needs.detect-changes.outputs.has-python == 'true'
     env:
-      PROJECT_ROOT: ${{ github.workspace }}/templates/python
+      PROJECT_ROOT: ${{ github.workspace }}/src/templates/python
     defaults:
       run:
-        working-directory: templates/python
+        working-directory: src/templates/python
     steps:
       - uses: actions/checkout@v4
       
@@ -169,10 +165,10 @@ jobs:
     needs: [detect-changes, security-scan, complexity-check]
     if: needs.detect-changes.outputs.has-nodejs == 'true'
     env:
-      PROJECT_ROOT: ${{ github.workspace }}/templates/nodejs
+      PROJECT_ROOT: ${{ github.workspace }}/src/templates/nodejs
     defaults:
       run:
-        working-directory: templates/nodejs
+        working-directory: src/templates/nodejs
     strategy:
       matrix:
         node-version: ['18', '20', '22']
@@ -208,10 +204,10 @@ jobs:
     needs: [detect-changes, security-scan, complexity-check]
     if: needs.detect-changes.outputs.has-rust == 'true'
     env:
-      PROJECT_ROOT: ${{ github.workspace }}/templates/rust
+      PROJECT_ROOT: ${{ github.workspace }}/src/templates/rust
     defaults:
       run:
-        working-directory: templates/rust
+        working-directory: src/templates/rust
     steps:
       - uses: actions/checkout@v4
       
@@ -238,10 +234,10 @@ jobs:
     needs: [detect-changes, security-scan, complexity-check]
     if: needs.detect-changes.outputs.has-go == 'true'
     env:
-      PROJECT_ROOT: ${{ github.workspace }}/templates/go
+      PROJECT_ROOT: ${{ github.workspace }}/src/templates/go
     defaults:
       run:
-        working-directory: templates/go
+        working-directory: src/templates/go
     strategy:
       matrix:
         go-version: ['1.20', '1.21', '1.22']
@@ -277,10 +273,10 @@ jobs:
     needs: [detect-changes, security-scan, complexity-check]
     if: needs.detect-changes.outputs.has-csharp == 'true'
     env:
-      PROJECT_ROOT: ${{ github.workspace }}/templates/csharp
+      PROJECT_ROOT: ${{ github.workspace }}/src/templates/csharp
     defaults:
       run:
-        working-directory: templates/csharp
+        working-directory: src/templates/csharp
     steps:
       - uses: actions/checkout@v4
       
@@ -311,7 +307,7 @@ jobs:
       
       - name: Validate OpenAPI specs
         run: |
-          for file in $(find contracts -name "*.yaml" -o -name "*.yml" 2>/dev/null); do
+          for file in $(find docs/contracts -name "*.yaml" -o -name "*.yml" 2>/dev/null); do
             if grep -q "openapi:" "$file"; then
               npx @redocly/cli lint "$file" || true
             fi
@@ -319,8 +315,8 @@ jobs:
       
       - name: Validate Protobuf specs
         run: |
-          for file in $(find contracts -name "*.proto" 2>/dev/null); do
-            protoc --proto_path=contracts --decode_raw < "$file" || true
+          for file in $(find docs/contracts -name "*.proto" 2>/dev/null); do
+            protoc --proto_path=docs/contracts --decode_raw < "$file" || true
           done
 
   # ============================================

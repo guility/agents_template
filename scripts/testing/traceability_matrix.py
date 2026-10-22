@@ -17,7 +17,7 @@ class TraceabilityMatrix:
     
     def __init__(self, project_root: str):
         self.project_root = Path(project_root)
-        self.requirements_dir = self.project_root / 'requirements'
+        self.requirements_dir = self.project_root / 'docs' / 'requirements'
         self.tests_dir = self.project_root / 'tests'
         self.src_dir = self.project_root / 'src'
         
@@ -46,8 +46,8 @@ class TraceabilityMatrix:
         if not self.requirements_dir.exists():
             return requirements
         
-        for req_file in self.requirements_dir.glob('REQ_*.md'):
-            req_id = req_file.stem  # e.g., REQ_001
+        for req_file in self.requirements_dir.glob('REQ-*.md'):
+            req_id = req_file.stem  # e.g., REQ-001
             
             with open(req_file, 'r', encoding='utf-8') as f:
                 content = f.read()
@@ -140,77 +140,63 @@ class TraceabilityMatrix:
         for mod_file, mod_data in self.matrix['code_modules'].items():
             self.matrix['links']['code_to_req'][mod_file] = mod_data['requirements_referenced']
     
+    def _record_unlinked_requirements(self, link_name: str, gap_name: str) -> None:
+        links = self.matrix['links'][link_name]
+        gaps = self.matrix['gaps'][gap_name]
+        gaps.extend(req_id for req_id in self.matrix['requirements'] if not links.get(req_id))
+
+    def _record_orphans(self, source_name: str, gap_name: str, skip_infrastructure: bool = False) -> None:
+        for path, item in self.matrix[source_name].items():
+            if item['requirements_referenced']:
+                continue
+            if skip_infrastructure and ('infrastructure' in path or 'utils' in path):
+                continue
+            self.matrix['gaps'][gap_name].append(path)
+
     def identify_gaps(self):
         """Identify gaps in traceability."""
-        # Untested requirements
-        for req_id, req_data in self.matrix['requirements'].items():
-            if not self.matrix['links']['req_to_tests'].get(req_id):
-                self.matrix['gaps']['untested_requirements'].append(req_id)
-        
-        # Unimplemented requirements
-        for req_id, req_data in self.matrix['requirements'].items():
-            if not self.matrix['links']['req_to_code'].get(req_id):
-                self.matrix['gaps']['unimplemented_requirements'].append(req_id)
-        
-        # Orphan tests (tests without requirement references)
-        for test_file, test_data in self.matrix['tests'].items():
-            if not test_data['requirements_referenced']:
-                self.matrix['gaps']['orphan_tests'].append(test_file)
-        
-        # Orphan code (code without requirement references)
-        for mod_file, mod_data in self.matrix['code_modules'].items():
-            if not mod_data['requirements_referenced']:
-                # Skip infrastructure/utility code
-                if 'infrastructure' not in mod_file and 'utils' not in mod_file:
-                    self.matrix['gaps']['orphan_code'].append(mod_file)
-    
+        self._record_unlinked_requirements('req_to_tests', 'untested_requirements')
+        self._record_unlinked_requirements('req_to_code', 'unimplemented_requirements')
+        self._record_orphans('tests', 'orphan_tests')
+        self._record_orphans('code_modules', 'orphan_code', skip_infrastructure=True)
+
+    def _render_coverage(self) -> str:
+        total = len(self.matrix['requirements'])
+        tested = total - len(self.matrix['gaps']['untested_requirements'])
+        implemented = total - len(self.matrix['gaps']['unimplemented_requirements'])
+        tested_pct = tested / total * 100 if total else 0
+        implemented_pct = implemented / total * 100 if total else 0
+        return (
+            "\nREQUIREMENTS COVERAGE:\n"
+            f"Total Requirements: {total}\n"
+            f"Tested: {tested}/{total} ({tested_pct:.1f}%)\n"
+            f"Implemented: {implemented}/{total} ({implemented_pct:.1f}%)\n"
+        )
+
+    def _render_gap(self, key: str, title: str, limit: int, symbol: str, detail: str = '') -> str:
+        entries = self.matrix['gaps'][key]
+        if not entries:
+            return ''
+        lines = [f"\n{symbol} {title} ({len(entries)}){detail or ':'}\n"]
+        lines.extend(f"   - {Path(item).name}\n" for item in entries[:limit])
+        return ''.join(lines)
+
     def generate_report(self) -> str:
         """Generate traceability matrix report."""
-        report = """
-=== TRACEABILITY MATRIX REPORT ===
-
-REQUIREMENTS COVERAGE:
-"""
-        
-        total_reqs = len(self.matrix['requirements'])
-        tested_reqs = total_reqs - len(self.matrix['gaps']['untested_requirements'])
-        implemented_reqs = total_reqs - len(self.matrix['gaps']['unimplemented_requirements'])
-        
-        report += f"Total Requirements: {total_reqs}\n"
-        report += f"Tested: {tested_reqs}/{total_reqs} ({tested_reqs/total_reqs*100:.1f}% if total_reqs > 0 else 0)\n"
-        report += f"Implemented: {implemented_reqs}/{total_reqs} ({implemented_reqs/total_reqs*100:.1f}% if total_reqs > 0 else 0)\n"
-        
-        report += "\n=== GAPS IDENTIFIED ===\n"
-        
-        if self.matrix['gaps']['untested_requirements']:
-            report += f"\n❌ UNTESTED REQUIREMENTS ({len(self.matrix['gaps']['untested_requirements'])}):\n"
-            for req_id in self.matrix['gaps']['untested_requirements'][:10]:
-                report += f"   - {req_id}\n"
-        
-        if self.matrix['gaps']['unimplemented_requirements']:
-            report += f"\n❌ UNIMPLEMENTED REQUIREMENTS ({len(self.matrix['gaps']['unimplemented_requirements'])}):\n"
-            for req_id in self.matrix['gaps']['unimplemented_requirements'][:10]:
-                report += f"   - {req_id}\n"
-        
-        if self.matrix['gaps']['orphan_tests']:
-            report += f"\n⚠️  ORPHAN TESTS ({len(self.matrix['gaps']['orphan_tests'])}): Tests without requirement references\n"
-            for test_file in self.matrix['gaps']['orphan_tests'][:5]:
-                report += f"   - {Path(test_file).name}\n"
-        
-        if self.matrix['gaps']['orphan_code']:
-            report += f"\n⚠️  ORPHAN CODE ({len(self.matrix['gaps']['orphan_code'])}): Modules without requirement references\n"
-            for mod_file in self.matrix['gaps']['orphan_code'][:5]:
-                report += f"   - {Path(mod_file).name}\n"
-        
-        # Compliance check
-        report += "\n=== COMPLIANCE CHECK ===\n"
-        all_tested = len(self.matrix['gaps']['untested_requirements']) == 0
-        all_implemented = len(self.matrix['gaps']['unimplemented_requirements']) == 0
-        
-        report += f"All requirements tested: {'✓' if all_tested else '✗'}\n"
-        report += f"All requirements implemented: {'✓' if all_implemented else '✗'}\n"
-        
-        return report
+        gaps = [
+            self._render_gap('untested_requirements', 'UNTESTED REQUIREMENTS', 10, '❌'),
+            self._render_gap('unimplemented_requirements', 'UNIMPLEMENTED REQUIREMENTS', 10, '❌'),
+            self._render_gap('orphan_tests', 'ORPHAN TESTS', 5, '⚠️', ': Tests without requirement references'),
+            self._render_gap('orphan_code', 'ORPHAN CODE', 5, '⚠️', ': Modules without requirement references'),
+        ]
+        tested = not self.matrix['gaps']['untested_requirements']
+        implemented = not self.matrix['gaps']['unimplemented_requirements']
+        compliance = (
+            "\n=== COMPLIANCE CHECK ===\n"
+            f"All requirements tested: {'✓' if tested else '✗'}\n"
+            f"All requirements implemented: {'✓' if implemented else '✗'}\n"
+        )
+        return "=== TRACEABILITY MATRIX REPORT ===\n" + self._render_coverage() + "\n=== GAPS IDENTIFIED ===\n" + ''.join(gaps) + compliance
     
     def check_compliance(self) -> bool:
         """Check if traceability requirements are met."""
@@ -249,17 +235,17 @@ REQUIREMENTS COVERAGE:
     
     def _find_requirement_refs(self, content: str) -> Set[str]:
         refs = set()
-        # Match patterns like REQ_001, [REQ_002], @requirement REQ_003
+        # Match patterns like REQ-001, [REQ-002], @requirement REQ-003
         patterns = [
-            r'REQ_\d+',
-            r'\[REQ_(\d+)\]',
-            r'@requirement\s+REQ_\d+'
+            r'REQ-\d+',
+            r'\[REQ-(\d+)\]',
+            r'@requirement\s+REQ-\d+'
         ]
         for pattern in patterns:
             matches = re.findall(pattern, content)
             for match in matches:
                 if isinstance(match, tuple):
-                    refs.add(f'REQ_{match[0]}')
+                    refs.add(f'REQ-{match[0]}')
                 else:
                     refs.add(match)
         return refs

@@ -296,7 +296,7 @@ class MutationRunner:
 
     def _project_directory(self, language: str) -> Path:
         configured = self.config.get("project_directories", {}).get(language)
-        return self.project_root / (configured or f"templates/{language}")
+        return self.project_root / (configured or f"src/templates/{language}")
 
     def _execute_tests(self, language: str):
         command = self._test_command(language)

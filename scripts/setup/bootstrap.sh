@@ -42,8 +42,8 @@ install_git_hooks() {
     mkdir -p "$PROJECT_ROOT/.git/hooks"
     
     # Копирование pre-commit хука
-    if [ -f "$PROJECT_ROOT/scripts/hooks/pre-commit.sh" ]; then
-        cp "$PROJECT_ROOT/scripts/hooks/pre-commit.sh" "$PROJECT_ROOT/.git/hooks/pre-commit"
+    if [ -f "$PROJECT_ROOT/scripts/common/hooks/pre-commit.sh" ]; then
+        cp "$PROJECT_ROOT/scripts/common/hooks/pre-commit.sh" "$PROJECT_ROOT/.git/hooks/pre-commit"
         chmod +x "$PROJECT_ROOT/.git/hooks/pre-commit"
         log_info "pre-commit hook installed"
     else
@@ -52,7 +52,7 @@ install_git_hooks() {
     
     # Создание symlink для удобства
     if [ -d "$PROJECT_ROOT/.git/hooks" ]; then
-        ln -sf "../../scripts/hooks/pre-commit.sh" "$PROJECT_ROOT/.git/hooks/pre-commit-local" 2>/dev/null || true
+        ln -sf "../../scripts/common/hooks/pre-commit.sh" "$PROJECT_ROOT/.git/hooks/pre-commit-local" 2>/dev/null || true
     fi
 }
 
@@ -178,18 +178,22 @@ create_project_structure() {
     if [ ! -d "$PROJECT_ROOT/src" ]; then
         log_step "Creating project structure..."
         
-        mkdir -p "$PROJECT_ROOT/src/domain"
-        mkdir -p "$PROJECT_ROOT/src/application"
-        mkdir -p "$PROJECT_ROOT/src/infrastructure"
-        mkdir -p "$PROJECT_ROOT/src/interface"
-        mkdir -p "$PROJECT_ROOT/tests/unit"
-        mkdir -p "$PROJECT_ROOT/tests/integration"
-        mkdir -p "$PROJECT_ROOT/tests/e2e"
-        mkdir -p "$PROJECT_ROOT/contracts"
+        mkdir -p "$PROJECT_ROOT/src/core/domain"
+        mkdir -p "$PROJECT_ROOT/src/core/application"
+        mkdir -p "$PROJECT_ROOT/src/core/infrastructure"
+        mkdir -p "$PROJECT_ROOT/src/core/interface"
+        mkdir -p "$PROJECT_ROOT/deploy/Dockerfiles/tests"
+        mkdir -p "$PROJECT_ROOT/deploy/composes/tests"
+        mkdir -p "$PROJECT_ROOT/deploy/composes/manual"
+        mkdir -p "$PROJECT_ROOT/src/tests/unit"
+        mkdir -p "$PROJECT_ROOT/src/tests/integration"
+        mkdir -p "$PROJECT_ROOT/src/tests/mutation"
+        mkdir -p "$PROJECT_ROOT/src/tests/e2e"
         mkdir -p "$PROJECT_ROOT/docs"
+        mkdir -p "$PROJECT_ROOT/docs/contracts"
         
         # Создание .gitkeep файлов
-        find "$PROJECT_ROOT/src" "$PROJECT_ROOT/tests" "$PROJECT_ROOT/contracts" "$PROJECT_ROOT/docs" \
+        find "$PROJECT_ROOT/src" "$PROJECT_ROOT/docs" \
             -type d -exec touch {}/.gitkeep \;
         
         log_info "Project structure created"
@@ -210,18 +214,21 @@ generate_readme() {
 
 ```
 project/
+├── deploy/                  # Dockerfiles и Compose-конфигурации
 ├── src/
-│   ├── domain/          # Domain слой (сущности, value objects)
-│   ├── application/     # Application слой (use cases, ports)
-│   ├── infrastructure/  # Infrastructure слой (реализация портов)
-│   └── interface/       # Interface слой (controllers, DTOs)
-├── tests/
-│   ├── unit/            # Unit тесты
-│   ├── integration/     # Integration тесты
-│   └── e2e/             # E2E тесты
-├── contracts/           # OpenAPI/Protobuf спецификации
+│   ├── core/
+│   │   ├── domain/          # Domain слой (сущности, value objects)
+│   │   ├── application/     # Application слой (use cases, ports)
+│   │   ├── infrastructure/  # Infrastructure слой (реализация портов)
+│   │   └── interface/       # Interface слой (controllers, DTOs)
+│   └── tests/
+│       ├── unit/            # Unit тесты
+│       ├── integration/     # Integration тесты
+│       ├── mutation/        # Mutation тесты
+│       └── e2e/             # E2E тесты
+├── docs/
+│   └── contracts/       # OpenAPI/Protobuf спецификации
 ├── scripts/             # Скрипты автоматизации
-└── docs/                # Документация
 ```
 
 ## Требования
@@ -309,8 +316,8 @@ main() {
     log_info ""
     log_info "Next steps:"
     log_info "1. Review AGENTS.md for development guidelines"
-    log_info "2. Start developing in src/domain/"
-    log_info "3. Write tests in tests/"
+    log_info "2. Start developing in src/core/domain/"
+    log_info "3. Write tests in src/tests/"
     log_info "4. Commit with automatic pre-commit checks"
 }
 

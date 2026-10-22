@@ -76,7 +76,7 @@ fi
 echo ""
 echo "=== Этап 3: Тесты ==="
 
-tests_dir="./tests"
+tests_dir="./src/tests"
 if [[ -d "$tests_dir" ]]; then
     unit_count=$(find "$tests_dir/unit" -type f 2>/dev/null | wc -l)
     integration_count=$(find "$tests_dir/integration" -type f 2>/dev/null | wc -l)

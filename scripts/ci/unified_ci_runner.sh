@@ -70,15 +70,15 @@ run_complexity_analysis() {
 run_unit_tests() {
     log_stage "Running unit tests..."
     
-    local test_dirs=("tests/unit" "src/**/tests")
+    local test_dirs=("src/tests/unit" "src/templates/**/tests")
     local failed=0
     
     for test_dir in "${test_dirs[@]}"; do
         if [ -d "$PROJECT_ROOT/$test_dir" ]; then
             # Python tests
-            if [ -d "$PROJECT_ROOT/tests/unit/python" ] || [ -d "$PROJECT_ROOT/src/tests/unit" ]; then
+            if [ -d "$PROJECT_ROOT/src/tests/unit/python" ] || [ -d "$PROJECT_ROOT/src/tests/unit" ]; then
                 if command -v pytest &> /dev/null; then
-                    pytest "$PROJECT_ROOT/tests/unit" --cov=src --cov-report=xml --cov-fail-under=100 || failed=1
+                    pytest "$PROJECT_ROOT/src/tests/unit" --cov=src --cov-report=xml --cov-fail-under=100 || failed=1
                 fi
             fi
             
@@ -118,9 +118,9 @@ run_integration_tests() {
     local failed=0
     
     # Python integration tests
-    if [ -d "$PROJECT_ROOT/tests/integration" ]; then
+    if [ -d "$PROJECT_ROOT/src/tests/integration" ]; then
         if command -v pytest &> /dev/null; then
-            pytest "$PROJECT_ROOT/tests/integration" --cov=src --cov-append || failed=1
+            pytest "$PROJECT_ROOT/src/tests/integration" --cov=src --cov-append || failed=1
         fi
     fi
     
@@ -140,7 +140,7 @@ run_integration_tests() {
     
     # Go integration tests
     if [ -f "$PROJECT_ROOT/go.mod" ]; then
-        go test ./tests/integration/... || failed=1
+        go test ./src/tests/integration/... || failed=1
     fi
     
     if [ $failed -eq 0 ]; then
@@ -158,9 +158,9 @@ run_e2e_tests() {
     local failed=0
     
     # Python e2e tests
-    if [ -d "$PROJECT_ROOT/tests/e2e" ]; then
+    if [ -d "$PROJECT_ROOT/src/tests/e2e" ]; then
         if command -v pytest &> /dev/null; then
-            pytest "$PROJECT_ROOT/tests/e2e" || failed=1
+            pytest "$PROJECT_ROOT/src/tests/e2e" || failed=1
         fi
     fi
     

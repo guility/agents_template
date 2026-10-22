@@ -37,7 +37,7 @@ log_step() {
 
 # Запуск unit тестов для Python
 run_python_unit_tests() {
-    local test_dir="$ROOT_DIR/tests/unit"
+    local test_dir="$ROOT_DIR/src/tests/unit"
     
     if [ ! -d "$test_dir" ]; then
         log_warn "Python unit test directory not found: $test_dir"
@@ -70,7 +70,7 @@ run_python_unit_tests() {
 
 # Запуск integration тестов для Python
 run_python_integration_tests() {
-    local test_dir="$ROOT_DIR/tests/integration"
+    local test_dir="$ROOT_DIR/src/tests/integration"
     
     if [ ! -d "$test_dir" ]; then
         log_warn "Python integration test directory not found: $test_dir"
@@ -99,7 +99,7 @@ run_python_integration_tests() {
 
 # Запуск e2e тестов для Python
 run_python_e2e_tests() {
-    local test_dir="$ROOT_DIR/tests/e2e"
+    local test_dir="$ROOT_DIR/src/tests/e2e"
     
     if [ ! -d "$test_dir" ]; then
         log_warn "Python e2e test directory not found: $test_dir"
@@ -145,7 +145,7 @@ run_python_mutation_tests() {
         
         # Инициализация (если нужно)
         if [ ! -f "cr-init.json" ]; then
-            cosmic-ray init src tests/unit cr-init.json 2>/dev/null || true
+            cosmic-ray init src src/tests/unit cr-init.json 2>/dev/null || true
         fi
         
         # Запуск мутаций
@@ -186,7 +186,7 @@ run_python_mutation_tests() {
 
 # Запуск unit тестов для Node.js/TypeScript
 run_nodejs_unit_tests() {
-    local test_dir="$ROOT_DIR/tests/unit"
+    local test_dir="$ROOT_DIR/src/tests/unit"
     
     if [ ! -d "$test_dir" ]; then
         log_warn "Node.js unit test directory not found: $test_dir"
