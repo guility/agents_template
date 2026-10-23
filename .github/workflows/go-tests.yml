@@ -1,0 +1,44 @@
+name: Go Tests
+
+on:
+  workflow_call:
+
+jobs:
+  go-test:
+    name: Go Tests
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_ROOT: ${{ github.workspace }}/src/templates/go
+    defaults:
+      run:
+        working-directory: src/templates/go
+    strategy:
+      matrix:
+        go-version: ['1.20', '1.21', '1.22']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Go template
+        working-directory: .
+        run: bash scripts/setup/fetch_language_templates.sh go
+      
+      - name: Setup Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+      
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+      
+      - name: Run tests
+        run: bash "$GITHUB_WORKSPACE/scripts/common/run-tests.sh"
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./test-results/go-coverage.out
+          flags: go
+

@@ -1,0 +1,35 @@
+name: C# Tests
+
+on:
+  workflow_call:
+
+jobs:
+  csharp-test:
+    name: C# Tests
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_ROOT: ${{ github.workspace }}/src/templates/csharp
+    defaults:
+      run:
+        working-directory: src/templates/csharp
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch C# template
+        working-directory: .
+        run: bash scripts/setup/fetch_language_templates.sh csharp
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      
+      - name: Restore dependencies
+        run: dotnet restore --locked-mode
+      
+      - name: Build
+        run: dotnet build --no-restore
+      
+      - name: Run tests
+        run: bash "$GITHUB_WORKSPACE/scripts/common/run-tests.sh"
+

@@ -1,0 +1,78 @@
+name: Python Tests
+
+on:
+  workflow_call:
+
+jobs:
+  python-test:
+    name: Python Tests
+    runs-on: ubuntu-26.04
+    env:
+      PROJECT_ROOT: ${{ github.workspace }}/src/templates/python
+    defaults:
+      run:
+        working-directory: src/templates/python
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Python template
+        working-directory: .
+        run: bash scripts/setup/fetch_language_templates.sh python
+      
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      
+      - name: Set up latest Python 3.14.x
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+          check-latest: true
+      
+      - name: Install dependencies
+        run: uv sync --all-extras
+      
+      - name: Run tests
+        run: bash "$GITHUB_WORKSPACE/scripts/common/run-tests.sh"
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./test-results/coverage.xml
+          flags: python
+
+  python-mutation:
+    name: Python Mutation Testing
+    runs-on: ubuntu-26.04
+    needs: [python-test]
+    env:
+      PROJECT_ROOT: ${{ github.workspace }}/src/templates/python
+    defaults:
+      run:
+        working-directory: src/templates/python
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Python template
+        working-directory: .
+        run: bash scripts/setup/fetch_language_templates.sh python
+
+      - name: Set up latest Python 3.14.x
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+          check-latest: true
+      
+      - name: Install uv and dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          uv sync --all-extras
+      
+      - name: Install mutation testing tool
+        run: pip install mutmut || true
+      
+      - name: Run mutation tests
+        run: bash "$GITHUB_WORKSPACE/scripts/common/run-tests.sh"
+

@@ -1,0 +1,45 @@
+name: Pipeline Summary
+
+on:
+  workflow_call:
+    inputs:
+      security_result:
+        type: string
+        required: true
+      complexity_result:
+        type: string
+        required: true
+      python_result:
+        type: string
+        required: true
+      nodejs_result:
+        type: string
+        required: true
+      rust_result:
+        type: string
+        required: true
+      go_result:
+        type: string
+        required: true
+      csharp_result:
+        type: string
+        required: true
+
+jobs:
+  summary:
+    name: Pipeline Summary
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Scan | ${{ inputs.security_result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Complexity Check | ${{ inputs.complexity_result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Python Tests | ${{ inputs.python_result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Node.js Tests | ${{ inputs.nodejs_result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Rust Tests | ${{ inputs.rust_result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Go Tests | ${{ inputs.go_result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| C# Tests | ${{ inputs.csharp_result }} |" >> $GITHUB_STEP_SUMMARY

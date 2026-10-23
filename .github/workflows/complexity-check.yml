@@ -1,0 +1,37 @@
+name: Complexity Check
+
+on:
+  workflow_call:
+
+jobs:
+  complexity-check:
+    name: Complexity Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install lizard
+        run: python -m pip install lizard
+      
+      - name: Check complexity
+        run: bash scripts/common/complexity-check.sh full
+
+  python-test:
+    name: Python Tests
+    uses: ./.github/workflows/python-tests.yml
+
+  nodejs-test:
+    name: Node.js Tests
+    uses: ./.github/workflows/nodejs-tests.yml
+
+  rust-test:
+    name: Rust Tests
+    uses: ./.github/workflows/rust-tests.yml
+
+  go-test:
+    name: Go Tests
+    uses: ./.github/workflows/go-tests.yml
+
+  csharp-test:
+    name: C# Tests
+    uses: ./.github/workflows/csharp-tests.yml

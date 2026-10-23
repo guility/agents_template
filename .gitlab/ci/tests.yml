@@ -10,13 +10,4 @@ required-tests:
     - bash scripts/ci/run-required-tests.sh python
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
-      changes:
-        - src/core/**/*
-        - scripts/setup/fetch_language_templates.sh
-        - src/tests/**/*
-        - scripts/testing/**/*
-        - scripts/ci/**/*
-        - scripts/common/**/*
-        - .gitlab-ci.yml
-        - .gitlab/ci/**/*
     - when: never

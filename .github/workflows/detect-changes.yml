@@ -1,0 +1,59 @@
+name: Detect Changes
+
+on:
+  workflow_call:
+    outputs:
+      has-python:
+        description: Whether Python files changed.
+        value: ${{ jobs.detect-changes.outputs.has-python }}
+      has-nodejs:
+        description: Whether Node.js files changed.
+        value: ${{ jobs.detect-changes.outputs.has-nodejs }}
+      has-rust:
+        description: Whether Rust files changed.
+        value: ${{ jobs.detect-changes.outputs.has-rust }}
+      has-go:
+        description: Whether Go files changed.
+        value: ${{ jobs.detect-changes.outputs.has-go }}
+      has-csharp:
+        description: Whether C# files changed.
+        value: ${{ jobs.detect-changes.outputs.has-csharp }}
+      has-templates:
+        description: Whether the language template fetcher changed.
+        value: ${{ jobs.detect-changes.outputs.has-templates }}
+      has-docs:
+        description: Whether documentation changed.
+        value: ${{ jobs.detect-changes.outputs.has-docs }}
+      has-contracts:
+        description: Whether API contracts changed.
+        value: ${{ jobs.detect-changes.outputs.has-contracts }}
+
+jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      has-python: ${{ steps.changes.outputs.python }}
+      has-nodejs: ${{ steps.changes.outputs.nodejs }}
+      has-rust: ${{ steps.changes.outputs.rust }}
+      has-go: ${{ steps.changes.outputs.go }}
+      has-csharp: ${{ steps.changes.outputs.csharp }}
+      has-templates: ${{ steps.changes.outputs.templates }}
+      has-docs: ${{ steps.changes.outputs.docs }}
+      has-contracts: ${{ steps.changes.outputs.contracts }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      
+      - name: Get changed files
+        id: changes
+        run: |
+          echo "python=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(py|uv\.lock|requirements.*\.txt|pyproject\.toml)$' | wc -l | awk '{print ($1 > 0)}')" >> $GITHUB_OUTPUT
+          echo "nodejs=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(js|ts|jsx|tsx|package-lock\.json|pnpm-lock\.yaml|yarn\.lock)$' | wc -l | awk '{print ($1 > 0)}')" >> $GITHUB_OUTPUT
+          echo "rust=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(rs|Cargo\.lock|Cargo\.toml)$' | wc -l | awk '{print ($1 > 0)}')" >> $GITHUB_OUTPUT
+          echo "go=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(go|go\.mod|go\.sum)$' | wc -l | awk '{print ($1 > 0)}')" >> $GITHUB_OUTPUT
+          echo "csharp=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(cs|csproj|sln)$' | wc -l | awk '{print ($1 > 0)}')" >> $GITHUB_OUTPUT
+          echo "templates=$(git diff --name-only HEAD~1 HEAD | grep -q '^scripts/setup/fetch_language_templates.sh$' && echo true || echo false)" >> $GITHUB_OUTPUT
+          echo "docs=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(md|rst)$' | wc -l | awk '{print ($1 > 0)}')" >> $GITHUB_OUTPUT
+          echo "contracts=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(yaml|yml|proto)$' | grep -E '(contract|openapi|swagger|protobuf)' | wc -l | awk '{print ($1 > 0)}')" >> $GITHUB_OUTPUT

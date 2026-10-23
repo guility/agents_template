@@ -1,0 +1,35 @@
+name: Rust Tests
+
+on:
+  workflow_call:
+
+jobs:
+  rust-test:
+    name: Rust Tests
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_ROOT: ${{ github.workspace }}/src/templates/rust
+    defaults:
+      run:
+        working-directory: src/templates/rust
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Rust template
+        working-directory: .
+        run: bash scripts/setup/fetch_language_templates.sh rust
+      
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+      
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+      
+      - name: Run tests
+        run: cargo test --all-features
+      
+      - name: Run mutation tests
+        run: |
+          cargo install cargo-mutants || true
+          bash "$GITHUB_WORKSPACE/scripts/common/run-tests.sh"
+

@@ -25,7 +25,7 @@ class TraceabilityMatrix(TraceabilityParsers):
         self.project_root = Path(project_root)
         self.requirements_dir = self.project_root / 'docs' / 'requirements'
         self.tests_dir = self.project_root / 'src' / 'tests'
-        self.src_dir = self.project_root / 'src'
+        self.src_dir = self.project_root / 'src' / 'core'
 
         self.matrix = {
             'requirements': {},

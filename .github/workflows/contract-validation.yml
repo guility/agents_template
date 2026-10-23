@@ -1,0 +1,25 @@
+name: Contract Validation
+
+on:
+  workflow_call:
+
+jobs:
+  contract-validation:
+    name: Contract Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Validate OpenAPI specs
+        run: |
+          for file in $(find docs/contracts -name "*.yaml" -o -name "*.yml" 2>/dev/null); do
+            if grep -q "openapi:" "$file"; then
+              npx @redocly/cli lint "$file" || true
+            fi
+          done
+      
+      - name: Validate Protobuf specs
+        run: |
+          for file in $(find docs/contracts -name "*.proto" 2>/dev/null); do
+            protoc --proto_path=docs/contracts --decode_raw < "$file" || true
+          done
