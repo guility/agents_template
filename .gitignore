@@ -1,5 +1,6 @@
 ```
 # Build artifacts
+src/templates/
 bin/
 obj/
 *.exe

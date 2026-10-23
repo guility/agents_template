@@ -11,7 +11,7 @@
 - DDD и чистая архитектура со слоями `domain`, `application`, `infrastructure` и `interface`.
 - Последовательный процесс: требования → архитектура → тесты → реализация → ревью → релиз.
 - Инструкции для аналитика, архитектора, QA, разработчика, оркестратора и ревьюеров.
-- Атомарные требования в `requirements/` и ADR в `docs/design/`.
+- Атомарные требования и API-контракты в `docs/`, ADR в `docs/design/`.
 - Unit, integration, e2e и мутационные тесты.
 - Проверки сложности, безопасности, форматирования и трассируемости.
 - GitHub Actions и GitLab CI.
@@ -21,28 +21,21 @@
 
 ```text
 .
-├── AGENTS.md                  # Общие обязательные правила для AI-агентов
-├── agents/                    # Инструкции отдельных ролей
-│   ├── analyst/
-│   ├── architect/
-│   ├── developer/
-│   ├── orchestrator/
-│   ├── qa/
-│   └── reviewers/
-├── best_practices/            # Практики требований, архитектуры, тестов и кода
-├── requirements/              # Атомарные требования REQ-XXX
-├── docs/design/               # ADR и дизайн-документы
-├── contracts/                 # OpenAPI, Protobuf и другие контракты
-├── templates/                 # Языковые заготовки
-│   ├── python/
-│   ├── nodejs/
-│   ├── rust/
-│   ├── go/
-│   └── csharp/
+├── README.md
+├── AGENTS.md
+├── .gitignore
+├── .gitlab-ci.yml              # Канонический файл GitLab CI
+├── deploy/                     # Dockerfile и Compose-конфигурации
+├── src/
+│   ├── core/                   # Слои DDD
+│   ├── templates/              # Языковые заготовки
+│   └── tests/                  # Unit, integration, mutation, e2e
+├── docs/                       # Требования, контракты, ADR и отчеты
 ├── scripts/                   # Bootstrap, CI, тестирование и анализ
-├── .github/workflows/         # GitHub Actions
-└── .gitlab/ci/                # GitLab CI
+└── agents/                    # Роли, ревьюеры и best practices
 ```
+
+Скрытые служебные каталоги `.git`, `.github`, `.gitlab` и `.hooks` не входят в список видимых каталогов.
 
 ## Быстрый старт
 
@@ -57,32 +50,24 @@ cd my-project
 
 Все общие скрипты написаны для Bash. На Windows запускайте их из WSL или Git Bash.
 
-### 2. Выберите языковую заготовку
+### 2. Загрузите языковой пакет
 
-Для знакомства с шаблоном можно работать прямо в соответствующем каталоге `templates/<language>`.
+Языковые правила и шаблоны публикуются отдельно в Git-тегах [`agents-template-langs`](https://github.com/guility/agents-template-langs). Теги и инструкции для каждой версии перечислены в README этого репозитория.
 
-| Стек | Рабочий каталог | Установка | Основная проверка |
-|---|---|---|---|
-| Python | `templates/python` | `uv sync --all-extras` | `uv run pytest --cov=src --cov-branch --cov-fail-under=100` |
-| Node.js/TypeScript | `templates/nodejs` | `pnpm install` | `pnpm test` |
-| Rust | `templates/rust` | `cargo fetch` | `cargo test --lib` |
-| Go | `templates/go` | `go mod download` | `go test ./...` |
-| C# | `templates/csharp` | создать `.sln` и `.csproj` на основе заготовки | `dotnet test` |
-
-Пример для Python:
+Загрузите нужный пакет в локальный кэш:
 
 ```bash
-cd templates/python
-uv sync --all-extras
-uv run pytest --cov=src --cov-branch --cov-fail-under=100
-cd ../..
+bash scripts/setup/fetch_language_templates.sh python
 ```
 
-Для отдельного production-проекта перенесите содержимое выбранной заготовки в корень репозитория, удалите неиспользуемые языковые задания из CI и замените их рабочие каталоги на корень проекта. Это удобно поручить агенту отдельной задачей:
+Замените `python` на `nodejs`, `rust`, `go` или `csharp`; значение `all` загрузит все текущие пакеты. Команды для конкретного шаблона указаны в его `README.md`.
+
+Для отдельного production-проекта перенесите содержимое загруженной заготовки в проект, удалите неиспользуемые задания из CI и замените их рабочие каталоги на корень проекта. Это удобно поручить агенту отдельной задачей:
 
 ```text
-Адаптируй этот меташаблон под Python-проект: перенеси templates/python в корень,
-сохрани AGENTS.md, agents, best_practices и scripts, удали из CI задания других
+Адаптируй этот меташаблон под Python-проект: сначала загрузи тег Python, затем перенеси
+его каталог template в src/core,
+сохрани AGENTS.md, agents и scripts, удали из CI задания других
 языков и проверь локальные команды и GitHub Actions.
 ```
 
@@ -97,7 +82,7 @@ bash scripts/setup/bootstrap.sh
 Хук также можно подключить вручную:
 
 ```bash
-git config core.hooksPath scripts/hooks
+git config core.hooksPath .hooks
 ```
 
 ### 4. Проверьте, что агент видит правила
@@ -109,27 +94,35 @@ git config core.hooksPath scripts/hooks
 архитектурные ограничения, требования к тестам и команды проверок.
 ```
 
-В ответе должны появиться DDD, чистая архитектура, последовательность этапов, обязательное чтение `best_practices/`, покрытие тестами и ограничение сложности не выше 10.
+В ответе должны появиться DDD, чистая архитектура, последовательность этапов, обязательное чтение `agents/best_practices/`, покрытие тестами и ограничение сложности не выше 10.
 
 ## Как устроена работа с агентами
 
-Файлы в `agents/` являются инструкциями ролей, а не автоматически запущенными процессами. Поддерживаемые AI-инструменты загрузят общий `AGENTS.md`, но для конкретного этапа следует явно попросить прочитать файл нужной роли и соответствующий документ из `best_practices/`.
+Файлы в `agents/` являются инструкциями ролей, а не автоматически запущенными процессами. Поддерживаемые AI-инструменты загрузят общий `AGENTS.md`, но для конкретного этапа следует явно попросить прочитать файл нужной роли и соответствующий документ из `agents/best_practices/`.
+
+## Дополнительные правила качества
+
+- Структурные и строковые лимиты, Docker/Compose-пути, тестовые гейты и порядок GitLab CI обязательны и описаны в `AGENTS.md`.
+- Для отклонений от рекомендуемых, но не абсолютных правил нужен ADR с владельцем и сроком пересмотра. Предел 300 строк абсолютный.
+- Production pipeline не получает секреты в недоверенных MR; образы для релиза рекомендуется снабжать SBOM и подписью, а после deploy проверять health-check и иметь документированный откат.
+- Нестабильные тесты не считаются пройденными после автоматического повторного запуска.
 
 | Этап | Инструкция роли | Обязательный результат |
 |---|---|---|
-| Анализ | `agents/analyst/AGENT.md` | один файл `requirements/REQ-XXX.md` на требование |
-| Проектирование | `agents/architect/AGENT.md` | ADR в `docs/design/`, модель и контракты |
-| Подготовка тестов | `agents/qa/AGENT.md` | падающие тесты, описывающие ожидаемое поведение |
-| Реализация | `agents/developer/AGENT.md` | код, проходящий согласованные тесты |
+| Анализ | `agents/roles/analyst/AGENT.md` | один файл `docs/requirements/REQ-XXX.md` на требование |
+| Проектирование | `agents/roles/architect/AGENT.md` | ADR в `docs/design/`, модель и контракты |
+| Подготовка тестов | `agents/roles/qa/AGENT.md` | падающие тесты, описывающие ожидаемое поведение |
+| Реализация | `agents/roles/developer/AGENT.md` | код, проходящий согласованные тесты |
 | Ревью | `agents/reviewers/*.md` | замечания либо подтверждение соответствия |
-| Координация | `agents/orchestrator/AGENT.md` | контроль порядка этапов и возвратов |
+| Координация | `agents/roles/orchestrator/AGENT.md` | контроль порядка этапов и возвратов |
 
 Универсальный стартовый запрос для новой задачи:
 
 ```text
-Изучи AGENTS.md и определи текущий этап workflow. Работай с кодом в
-templates/python. Перед действиями прочитай инструкцию нужной роли и связанный
-документ из best_practices. Не переходи к следующему этапу, пока артефакты
+Изучи AGENTS.md и определи текущий этап workflow. Сначала загрузи языковой пакет
+Python командой scripts/setup/fetch_language_templates.sh python. Работай с кодом в
+src/templates/python. Перед действиями прочитай инструкцию нужной роли, языковые
+правила из соответствующего тега и связанный документ из agents/best_practices. Не переходи к следующему этапу, пока артефакты
 текущего этапа не готовы и не проверены. В конце перечисли изменённые файлы и
 выполненные проверки.
 ```
@@ -138,23 +131,23 @@ templates/python. Перед действиями прочитай инстру�
 
 ```text
 # Требования
-Работай как аналитик. Прочитай agents/analyst/AGENT.md и
-best_practices/requirements_best_practices.md. Сформируй атомарное требование
+Работай как аналитик. Прочитай agents/roles/analyst/AGENT.md и
+agents/best_practices/requirements_best_practices.md. Сформируй атомарное требование
 REQ-001 с критериями Given-When-Then. Код пока не изменяй.
 
 # Архитектура
-Требование REQ-001 утверждено. Прочитай agents/architect/AGENT.md и
-best_practices/architecture_best_practices.md. Подготовь ADR и контракты.
+Требование REQ-001 утверждено. Прочитай agents/roles/architect/AGENT.md и
+agents/best_practices/architecture_best_practices.md. Подготовь ADR и контракты.
 Реализацию не начинай.
 
 # Тесты
 Для утверждённых REQ-001 и ADR подготовь тесты по TDD. Прочитай
-agents/qa/AGENT.md и best_practices/testing_best_practices.md. Покажи, что новые
+agents/roles/qa/AGENT.md и agents/best_practices/testing_best_practices.md. Покажи, что новые
 тесты падают по ожидаемой причине.
 
 # Реализация
 Реализуй REQ-001 по утверждённому ADR и существующим падающим тестам. Прочитай
-agents/developer/AGENT.md и best_practices/coding_best_practices.md. После
+agents/roles/developer/AGENT.md и agents/best_practices/coding_best_practices.md. После
 изменений запусти форматирование, линтер, тесты и анализ сложности.
 
 # Ревью
@@ -321,11 +314,17 @@ bash scripts/common/validate_requirements.sh
 bash scripts/common/check_workflow_status.sh
 ```
 
+Перед проверкой выбранной заготовки загрузите соответствующий языковой пакет:
+
+```bash
+bash scripts/setup/fetch_language_templates.sh python
+```
+
 Анализ сложности выбранной заготовки:
 
 ```bash
 python scripts/testing/complexity_analyzer.py \
-  --root templates/python \
+  --root src/templates/python \
   --max-complexity 10 \
   --patterns '*.py'
 ```
@@ -334,7 +333,7 @@ python scripts/testing/complexity_analyzer.py \
 
 ```bash
 python scripts/testing/mutation_runner.py \
-  --project-root templates/python \
+  --project-root src/templates/python \
   --language python \
   --generate-report
 ```
@@ -348,10 +347,10 @@ python scripts/testing/traceability_matrix.py --root .
 Полная пост-агентная валидация:
 
 ```bash
-python scripts/validation/post_agent_validator.py --project-root .
+python scripts/common/validation/post_agent_validator.py --project-root .
 ```
 
-GitHub Actions находится в `.github/workflows/ci-cd.yml`, GitLab CI подключается через корневой `.gitlab-ci.yml`. В текущем виде CI проверяет все языковые заготовки. После выбора одного стека адаптируйте pipeline под фактический корень приложения.
+GitHub Actions и GitLab CI запускаются только после слияния MR в защищенную основную ветку. Стадии GitLab: `sast` → `build` → `security` → `tests` → `push` → `fetch_secrets` (если нужен Vault) → ручной `deploy`. Корневой GitLab config — `.gitlab-ci.yml`, который подключает настройки из скрытого служебного каталога `.gitlab/`.
 
 ## Рекомендации по безопасной работе
 

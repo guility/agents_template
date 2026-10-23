@@ -1,0 +1,30 @@
+name: Contract Validation
+
+on:
+  workflow_call:
+
+jobs:
+  contract-validation:
+    name: Contract Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Protobuf compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes protobuf-compiler
+
+      - name: Validate OpenAPI specs
+        run: |
+          find docs/contracts -type f \( -name "*.yaml" -o -name "*.yml" \) -print | while read -r file; do
+            if grep -q "openapi:" "$file"; then
+              npx @redocly/cli lint "$file"
+            fi
+          done
+
+      - name: Validate Protobuf specs
+        run: |
+          find docs/contracts -type f -name "*.proto" -print | while read -r file; do
+            protoc --proto_path=docs/contracts --descriptor_set_out=/tmp/contracts.pb "$file"
+          done

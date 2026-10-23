@@ -39,7 +39,7 @@ PY_FILES=$(echo "$STAGED_FILES" | grep '\.py$' || echo "")
 if [ -n "$PY_FILES" ] && command -v python3 &> /dev/null; then
     for file in $PY_FILES; do
         if [ -f "$file" ]; then
-            RESULT=$(python3 "$PROJECT_ROOT/scripts/testing/complexity_analyzer.py" --root "$PROJECT_ROOT" --output /tmp/complexity_check.json 2>&1 || echo "FAILED")
+            RESULT=$(python3 "$PROJECT_ROOT/scripts/testing/complexity_analyzer.py" --root "$PROJECT_ROOT" --patterns "$file" --output /tmp/complexity_check.json 2>&1 || echo "FAILED")
             if echo "$RESULT" | grep -q "FAILED"; then
                 echo "❌ Complexity violations in $file"
                 EXIT_CODE=1
@@ -75,7 +75,7 @@ fi
 
 # Check 4: Validate requirements format
 echo "📝 Validating requirements format..."
-REQ_FILES=$(echo "$STAGED_FILES" | grep '^requirements/REQ_.*\.md$' || echo "")
+REQ_FILES=$(echo "$STAGED_FILES" | grep '^docs/requirements/REQ-.*\.md$' || echo "")
 if [ -n "$REQ_FILES" ] && [ -f "$PROJECT_ROOT/scripts/common/validate_requirements.sh" ]; then
     for req_file in $REQ_FILES; do
         if [ -f "$req_file" ]; then
@@ -103,7 +103,7 @@ if [ -n "$NEW_SRC_FILES" ]; then
         # Check if corresponding test file exists
         TEST_FILE=""
         if echo "$src_file" | grep -q '\.py$'; then
-            TEST_FILE=$(echo "$src_file" | sed 's|^src/|tests/unit/|; s/\.py$/_test.py/')
+            TEST_FILE=$(echo "$src_file" | sed 's|^src/|src/tests/unit/|; s/\.py$/_test.py/')
         elif echo "$src_file" | grep -q '\.rs$'; then
             TEST_FILE="$src_file"  # Rust inline tests
         elif echo "$src_file" | grep -q '\.go$'; then

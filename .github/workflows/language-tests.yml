@@ -1,0 +1,72 @@
+name: Language Tests
+
+on:
+  workflow_call:
+    inputs:
+      run_python:
+        type: boolean
+        required: true
+      run_nodejs:
+        type: boolean
+        required: true
+      run_rust:
+        type: boolean
+        required: true
+      run_go:
+        type: boolean
+        required: true
+      run_csharp:
+        type: boolean
+        required: true
+    outputs:
+      python_result:
+        description: Python test status.
+        value: ${{ jobs.test-summary.outputs.python_result }}
+      nodejs_result:
+        description: Node.js test status.
+        value: ${{ jobs.test-summary.outputs.nodejs_result }}
+      rust_result:
+        description: Rust test status.
+        value: ${{ jobs.test-summary.outputs.rust_result }}
+      go_result:
+        description: Go test status.
+        value: ${{ jobs.test-summary.outputs.go_result }}
+      csharp_result:
+        description: C# test status.
+        value: ${{ jobs.test-summary.outputs.csharp_result }}
+
+jobs:
+  python-test:
+    name: Python Tests
+    if: inputs.run_python
+    uses: ./.github/workflows/python-tests.yml
+  nodejs-test:
+    name: Node.js Tests
+    if: inputs.run_nodejs
+    uses: ./.github/workflows/nodejs-tests.yml
+  rust-test:
+    name: Rust Tests
+    if: inputs.run_rust
+    uses: ./.github/workflows/rust-tests.yml
+  go-test:
+    name: Go Tests
+    if: inputs.run_go
+    uses: ./.github/workflows/go-tests.yml
+  csharp-test:
+    name: C# Tests
+    if: inputs.run_csharp
+    uses: ./.github/workflows/csharp-tests.yml
+
+  test-summary:
+    name: Collect Language Test Status
+    runs-on: ubuntu-latest
+    needs: [python-test, nodejs-test, rust-test, go-test, csharp-test]
+    if: always()
+    outputs:
+      python_result: ${{ needs.python-test.result }}
+      nodejs_result: ${{ needs.nodejs-test.result }}
+      rust_result: ${{ needs.rust-test.result }}
+      go_result: ${{ needs.go-test.result }}
+      csharp_result: ${{ needs.csharp-test.result }}
+    steps:
+      - run: echo "Collected language test statuses."

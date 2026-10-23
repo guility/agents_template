@@ -1,0 +1,44 @@
+name: Node.js Tests
+
+on:
+  workflow_call:
+
+jobs:
+  nodejs-test:
+    name: Node.js Tests
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_ROOT: ${{ github.workspace }}/src/templates/nodejs
+    defaults:
+      run:
+        working-directory: src/templates/nodejs
+    strategy:
+      matrix:
+        node-version: ['18', '20', '22']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Node.js template
+        working-directory: .
+        run: bash scripts/setup/fetch_language_templates.sh nodejs
+      
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      
+      - name: Install pnpm
+        run: npm install -g pnpm
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Run tests
+        run: bash "$GITHUB_WORKSPACE/scripts/common/run-tests.sh"
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./test-results/coverage.xml
+          flags: nodejs
+

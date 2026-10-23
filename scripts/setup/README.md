@@ -7,17 +7,20 @@
 ```
 project/
 ├── src/
-│   ├── domain/          # Domain слой (сущности, value objects)
-│   ├── application/     # Application слой (use cases, ports)
-│   ├── infrastructure/  # Infrastructure слой (реализация портов)
-│   └── interface/       # Interface слой (controllers, DTOs)
-├── tests/
-│   ├── unit/            # Unit тесты
-│   ├── integration/     # Integration тесты
-│   └── e2e/             # E2E тесты
-├── contracts/           # OpenAPI/Protobuf спецификации
+│   ├── core/
+│   │   ├── domain/          # Domain слой (сущности, value objects)
+│   │   ├── application/     # Application слой (use cases, ports)
+│   │   ├── infrastructure/  # Infrastructure слой (реализация портов)
+│   │   └── interface/       # Interface слой (controllers, DTOs)
+│   └── tests/
+│       ├── unit/            # Unit тесты
+│       ├── integration/     # Integration тесты
+│       ├── mutation/        # Mutation тесты
+│       └── e2e/             # E2E тесты
+├── deploy/                  # Dockerfiles и Compose-конфигурации
+├── docs/
+│   └── contracts/       # OpenAPI/Protobuf спецификации
 ├── scripts/             # Скрипты автоматизации
-└── docs/                # Документация
 ```
 
 ## Требования

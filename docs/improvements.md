@@ -34,7 +34,7 @@
 
 **Реализация**:
 ```bash
-./scripts/validate/invest_check.sh requirements/REQ-*.md
+./scripts/common/validation/invest_check.sh docs/requirements/REQ-*.md
 ```
 
 **Ожидаемый эффект**: Снижение количества супертребований на 80%
