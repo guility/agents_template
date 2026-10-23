@@ -34,13 +34,13 @@
 - ✅ CNC (цикломатическая сложность): **≤10**
 
 ### 4. Языковые шаблоны (5 языков)
-| Язык | Тег с правилами и шаблоном |
-|------|-----------------------------|
-| Python | `python-v1.0.1` |
-| Node.js/TypeScript | `nodejs-v1.0.1` |
-| Rust | `rust-v1.0.1` |
-| Go | `go-v1.0.1` |
-| C# | `csharp-v1.0.1` |
+| Язык | Ветка | Текущий тег |
+|------|-------|-------------|
+| Python | `python` | `python/v2.0.0` (Python 3.14.x, Ubuntu 26.04 LTS) |
+| Node.js/TypeScript | `nodejs` | `nodejs/v1.0.1` |
+| Rust | `rust` | `rust/v1.0.1` |
+| Go | `go` | `go/v1.0.1` |
+| C# | `csharp` | `csharp/v1.0.1` |
 
 ### 5. Workflow разработки
 ```

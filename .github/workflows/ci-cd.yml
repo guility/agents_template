@@ -99,7 +99,7 @@ jobs:
   # ============================================
   python-test:
     name: Python Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: [detect-changes, security-scan, complexity-check]
     if: needs.detect-changes.outputs.has-python == 'true' || needs.detect-changes.outputs.has-templates == 'true'
     env:
@@ -107,9 +107,6 @@ jobs:
     defaults:
       run:
         working-directory: src/templates/python
-    strategy:
-      matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
     steps:
       - uses: actions/checkout@v4
 
@@ -122,8 +119,11 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
       
-      - name: Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
+      - name: Set up latest Python 3.14.x
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+          check-latest: true
       
       - name: Install dependencies
         run: uv sync --all-extras
@@ -139,7 +139,7 @@ jobs:
 
   python-mutation:
     name: Python Mutation Testing
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: [detect-changes, python-test]
     if: needs.detect-changes.outputs.has-python == 'true' || needs.detect-changes.outputs.has-templates == 'true'
     env:
@@ -153,6 +153,12 @@ jobs:
       - name: Fetch Python template
         working-directory: .
         run: bash scripts/setup/fetch_language_templates.sh python
+
+      - name: Set up latest Python 3.14.x
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+          check-latest: true
       
       - name: Install uv and dependencies
         run: |
