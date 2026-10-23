@@ -49,7 +49,8 @@ run_nodejs_mutation_tests() {
         if npx stryker run 2>&1 | tee "$ROOT_DIR/test-results/mutation-nodejs.log"; then
             log_info "Mutation testing completed"
         else
-            log_warn "Stryker found weaknesses in test suite"
+            log_error "Stryker found surviving mutants or failed to complete"
+            return 1
         fi
     else
         log_error "Stryker not found; cannot run Node.js mutation testing"

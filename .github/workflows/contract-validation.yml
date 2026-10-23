@@ -9,17 +9,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
+      - name: Install Protobuf compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes protobuf-compiler
+
       - name: Validate OpenAPI specs
         run: |
-          for file in $(find docs/contracts -name "*.yaml" -o -name "*.yml" 2>/dev/null); do
+          find docs/contracts -type f \( -name "*.yaml" -o -name "*.yml" \) -print | while read -r file; do
             if grep -q "openapi:" "$file"; then
-              npx @redocly/cli lint "$file" || true
+              npx @redocly/cli lint "$file"
             fi
           done
-      
+
       - name: Validate Protobuf specs
         run: |
-          for file in $(find docs/contracts -name "*.proto" 2>/dev/null); do
-            protoc --proto_path=docs/contracts --decode_raw < "$file" || true
+          find docs/contracts -type f -name "*.proto" -print | while read -r file; do
+            protoc --proto_path=docs/contracts --descriptor_set_out=/tmp/contracts.pb "$file"
           done
