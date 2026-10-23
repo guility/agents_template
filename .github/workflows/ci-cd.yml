@@ -32,14 +32,6 @@ jobs:
     if: ${{ needs.detect-changes.outputs.has-contracts == 'true' }}
     uses: ./.github/workflows/contract-validation.yml
 
-  release:
-    needs: [language-tests, security-scan]
-    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-    permissions:
-      contents: write
-      packages: write
-    uses: ./.github/workflows/release.yml
-
   summary:
     needs: [security-scan, complexity-check, language-tests]
     if: always()

@@ -4,7 +4,7 @@
 run_contract_validation() {
     log_stage "Validating API contracts..."
     
-    local contracts_dir="$PROJECT_ROOT/contracts"
+    local contracts_dir="$PROJECT_ROOT/docs/contracts"
     local failed=0
     
     if [ -d "$contracts_dir" ]; then
