@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-suite="${1:?Usage: run-test-suite.sh {unit|integration|mutation|e2e}}"
+suite="${1:?Usage: run-test-suite.sh unit|integration|mutation|e2e}"
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 found=0
 
