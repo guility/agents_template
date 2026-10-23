@@ -8,7 +8,7 @@ import xml.etree.ElementTree as element_tree
 from dataclasses import FrozenInstanceError
 from pathlib import Path
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 
 
 def load_module(name: str, relative_path: str):
@@ -48,6 +48,7 @@ class MutationRunnerTests(unittest.TestCase):
         (self.project / "tests" / "test_calculator.py").write_text(test_source, encoding="utf-8")
         config = {
             "test_commands": {"python": [sys.executable, "-m", "unittest", "discover", "-s", "tests"]},
+            "project_directories": {"python": "templates/python"},
             "test_timeout_seconds": 30,
         }
         self.runner = mutation_module.MutationRunner(self.root, config)

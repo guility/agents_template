@@ -8,7 +8,7 @@ deploy-production:
   when: manual
   allow_failure: false
   script:
-    - sh scripts/ci/deploy-images.sh
+    - sh scripts/ci/deploy/deploy-images.sh
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
       exists:

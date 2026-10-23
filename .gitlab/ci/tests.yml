@@ -1,8 +1,13 @@
 required-tests:
   stage: tests
-  image: python:3.12.8
+  image: ubuntu:26.04
+  before_script:
+    - apt-get update
+    - apt-get install -y --no-install-recommends ca-certificates curl git
+    - curl --fail --location --silent --show-error https://astral.sh/uv/install.sh | sh
+    - export PATH="$HOME/.local/bin:$PATH"
   script:
-    - bash scripts/ci/run-required-tests.sh
+    - bash scripts/ci/run-required-tests.sh python
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
       changes:
@@ -11,4 +16,7 @@ required-tests:
         - src/tests/**/*
         - scripts/testing/**/*
         - scripts/ci/**/*
+        - scripts/common/**/*
+        - .gitlab-ci.yml
+        - .gitlab/ci/**/*
     - when: never

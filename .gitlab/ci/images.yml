@@ -7,7 +7,7 @@ build-images:
     - name: docker:27.5.1-dind
       alias: docker
   script:
-    - bash scripts/ci/build-images.sh
+    - bash scripts/ci/images/build-images.sh
   artifacts:
     paths:
       - artifacts/images/
@@ -27,7 +27,7 @@ scan-images:
   dependencies:
     - build-images
   script:
-    - bash scripts/ci/scan-images.sh
+    - bash scripts/ci/images/scan-images.sh
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
       exists:
@@ -46,7 +46,7 @@ push-images:
   dependencies:
     - build-images
   script:
-    - bash scripts/ci/push-images.sh
+    - bash scripts/ci/images/push-images.sh
   artifacts:
     paths:
       - artifacts/registry-image-refs.txt
