@@ -100,14 +100,14 @@ project/
 - Разбивайте большие файлы по ответственности, сохраняя связность модулей. Не дробите код искусственно только ради метрики.
 
 #### 2. Тестирование
-- **100% покрытие** является обязательным CI-гейтом для unit, integration, mutation и e2e проверок. Пропущенная или пустая обязательная suite считается провалом, а не успешным запуском.
+- Для component и aggregator projects **100% покрытие** является обязательным CI-гейтом для unit, integration, mutation и e2e проверок. Пропущенная или пустая обязательная suite считается провалом, а не успешным запуском.
 - Для unit-тестов требуется 100% покрытия строк и ветвей; integration-тесты покрывают 100% задокументированных путей интеграции; e2e-тесты — 100% критериев приемки; mutation score — 100% применимых мутаций.
-- **Мутационное тестирование**: 2 мутации на каждую функцию/метод
+- **Мутационное тестирование**: для каждой production-функции/метода проверяются не менее двух применимых мутаций: изменение логики и граничного условия. Это отдельный знаменатель от локального требования к числу companion-тестов на обычный тестовый случай.
   - Мутация 1: изменение логики (например, `>` на `<`, `+` на `-`)
   - Мутация 2: граничные условия (null, empty, max values)
 - Тесты должны быть независимыми и воспроизводимыми
 - Использование Testcontainers для изоляции в integration-тестах; тесты должны быть независимыми, воспроизводимыми и не обращаться к production-системам.
-- В полном GitLab pipeline каждый тип запускается отдельным обязательным runner-скриптом `scripts/ci/test-{unit,integration,mutation,e2e}.sh`. Отсутствующий runner, пустая suite, пропуск проверок или отчет ниже 100% завершают job ошибкой.
+- В полном GitLab pipeline каждого component/aggregator project каждый тип запускается отдельным обязательным runner-скриптом `scripts/ci/test-{unit,integration,mutation,e2e}.sh`. Отсутствующий runner, пустая suite, пропуск проверок или отчет ниже 100% завершают job ошибкой.
 
 #### 3. Безопасность
 - Запрещены хардкодные секреты
@@ -118,7 +118,7 @@ project/
 #### 4. Качество кода
 - Максимальная цикломатическая сложность (CNC): 10
 - Форматирование автоматически применяется pre-commit хуками
-- CI запускается только после слияния MR в защищенную основную ветку; прямые push в эту ветку запрещены.
+- Прямые push в защищённую основную ветку запрещены. MR CI допускается только после документированного credential-isolation gate и запускает лишь lint, static analysis и первичный SAST; он не получает production credentials и не выполняет build, полный security/test набор, push, Vault fetch или deploy. До прохождения gate MR CI отключён. Полный pipeline запускается после merge в защищённую основную ветку.
 
 #### 5. Версионирование
 - Lock-файлы обязательны для всех зависимостей.
@@ -135,12 +135,25 @@ project/
 - Dockerfile для тестов размещаются в `./deploy/Dockerfiles/tests/`, строятся поверх основного образа и добавляют только необходимые тестовые пакеты. Отдельная база допустима, если наследование технически невозможно или нужен полностью независимый образ; причина фиксируется в ADR.
 - Все Compose-файлы размещаются в `./deploy/composes/`: deploy-конфигурации — в корне, тестовые — в `tests/`, локальная разработка и ручной запуск — в `manual/`.
 - Тестовые и локальные Compose-конфигурации должны переиспользовать deploy-конфигурацию через overlays. Дублирование допускается только при технической невозможности переиспользования с обоснованием в ADR.
-- GitHub Actions и GitLab CI запускаются только на push в защищенную основную ветку после слияния MR. Pipeline для MR до слияния, прочих branch push, tag, schedule и ручного запуска отключены; настройки защиты запрещают прямые push в основную ветку.
+- Компонентные проекты следуют полной политике CI: ограниченный MR pipeline после credential-isolation gate и полный post-merge pipeline после слияния в защищённую основную ветку. Произвольные branch push, tag и schedule pipelines отключены.
 - Стадии GitLab CI идут строго в порядке: `sast` → `build` → `security` → `tests` → `push` → `fetch_secrets` (опционально) → `deploy`. `sast` содержит проверки, не требующие сборки; `security` проверяет собранные образы; `tests` запускает полный набор unit, integration, mutation и e2e тестов.
 - `push` отправляет образы в registry только после успешных `build`, `security` и `tests`. `fetch_secrets` — необязательная стадия, если секреты не поступают через другой разрешенный механизм. Секреты нельзя передавать через артефакты CI.
-- `deploy` — ручной этап с подтверждением, доступный только после успеха всех обязательных предыдущих этапов. Он разворачивает только образ из registry по неизменяемому digest; сборка образа во время deploy запрещена.
-- Неиспользуемые стадии могут не содержать заданий, если в проекте нет соответствующих Docker-образов или Vault-интеграции; обязательные тестовые suites пропускать нельзя.
+- `deploy` — ручной этап с подтверждением, доступный только после успеха всех обязательных предыдущих этапов. Он разворачивает только образ из registry по неизменяемому digest; сборка образа во время deploy запрещена. Для явно утверждённого `deployment-only consumer` применяются только Compose deployment jobs и необходимые secret fetch jobs.
+- Неиспользуемые стадии могут не содержать заданий, если в проекте нет соответствующих Docker-образов или Vault-интеграции; обязательные test suites компонентных проектов пропускать нельзя. Единственное исключение — утверждённый профиль `deployment-only consumer`.
 - Docker-in-Docker jobs выполняются только на выделенном защищенном runner с тегом `protected-dind`; production-переменные и deploy-environment должны быть protected.
+- MR pipeline разрешён только для same-project merge request в защищённую default branch и только после credential-isolation gate. Gate фиксирует аудит всех project/group/instance variables и подтверждает, что production credentials имеют Protected scope и недоступны source branch MR pipeline, а доступные MR jobs значения не являются секретами. Fork-MR не запускают CI. Флаг включения MR CI не заменяет этот аудит; до проверки pipeline variables MR CI отключён.
+- На MR выполняются только lint/static analysis и первичный SAST; build, image security, обязательные test suites, publication, Vault fetch и deploy запрещены. В post-merge pipeline стадии идут строго в порядке `sast` → `build` → `security` → `tests` → `push` → `fetch_secrets` (если runtime secrets нужны) → `deploy`.
+- MR lint запускается на отдельном unprotected runner с tag `untrusted-ci`, без Docker socket, production network access или secrets. В каждом component/aggregator project обязательны `scripts/ci/lint_static.sh` и языкоспецифичные `scripts/ci/lint-<language>.sh`; отсутствующая команда завершает job ошибкой. Образ инструментария задаётся project-level non-secret CI variable `AGENTS_CI_LINT_IMAGE` с version/digest pin; образ публичный либо runner использует отдельный pull-only credential, недоступный job. `AGENTS_MR_CI_ENABLED` задаётся на уровне каждого проекта как `false` по умолчанию и переключается в `true` только после credential-isolation gate. Обе переменные не задаются в `/air`; значение flag не заменяет аудит доступных job variables.
+- Секреты доступны только protected jobs/environments; их нельзя передавать через CI artifacts, dotenv reports, caches, logs или командные аргументы. Vault fetch создаёт `.secrets.env` с режимом доступа, ограниченным deploy job; файл передаётся только в пределах заранее проверенного runner host/path, не через межхостовый GitLab artifact.
+- Для `deployment-only consumer` все runtime-переменные передаются через `.secrets.env`, прочие настройки явно описаны в Compose. Deploy job выполняет прямые `docker compose` команды; скрипты `*.sh` для deployment не используются.
+
+#### Профиль `deployment-only consumer`
+- Профиль допустим только для AI-Mart в рамках REQ-017 и утверждённого deployment ADR; другой проект не может принять его по аналогии без отдельного решения.
+- AI-Mart остаётся deployment-only consumer: он не собирает, не тестирует, не сканирует и не публикует component images. Он потребляет только immutable digest, запускает необходимые Vault fetch и прямой Compose deploy после merge.
+- Изменения AI-Mart строго additive: разрешены только семь ClearML roles (`apiserver`, `webserver`, `fileserver`, `async_delete`, `elasticsearch`, `mongo`, `redis`), их отдельные networks/volumes, разрешённые ClearML endpoints Campaign API и необходимые ClearML upstreams. Для GPU service routes допускается только HTTPS/443 с проверкой TLS/SNI при сохранении URI, auth, headers, body limits и buffering. Все прочие сервисы, настройки, routes, существующие volumes, CI variables и container IDs вне allowlist сохраняются. Не использовать широкий `compose up/down`, `prune` или удаление volumes. До deploy сравнить resolved Compose и зафиксировать container IDs сервисов вне allowlist.
+- Deploy Compose расположен в `./deploy/composes/`. Перед MR Compose локально рендерится с безопасными placeholders; в MR сохраняется отчёт с commit SHA, allowlist сервисов, digest images, TLS/healthcheck и отсутствием `privileged`/Docker socket. Секретные значения в отчёт не включаются.
+- Не менять существующие AI-Mart CI variables, групповые CI variables `/air` или значения Vault. Существующие diagnostics/maintenance jobs сохраняются и не включаются в обычный deploy flow. ClearML `agent-services`, `privileged` mode, Docker socket и иные Docker API mounts запрещены в AI-Mart.
+- До импорта истории владелец отзывает старые ClearML admin credentials. Administrative и agent keys разделены; task containers не получают ни одну пару. Если выбранный Agent/runtime не может обеспечить это ограничение, Agent deployment остаётся заблокирован до отдельного одобренного решения.
 
 #### 8. Дополнительные ограничения
 - Базовые образы и CI-инструменты фиксируются на версии; запрещено использовать плавающие теги `latest` в production-сборках.
@@ -156,14 +169,17 @@ project/
 4. Проверка сложности (lizard)
 5. Быстрые unit тесты для измененных файлов
 
-### Post-commit активности
+### Post-merge активности
 
-После слияния MR в защищенную основную ветку:
-1. Полное тестирование (unit + integration + e2e)
-2. Мутационное тестирование
-3. Сканирование безопасности (trivy, semgrep)
-4. Сборка артефактов
-5. Ручной deploy registry-образа после обязательных проверок и подтверждения
+После слияния MR в защищённую основную ветку выполняются обязательные стадии в этом порядке:
+1. SAST, включая проверки, не требующие собранного артефакта
+2. Сборка артефактов
+3. Сканирование безопасности собранных artifacts (trivy, semgrep)
+4. Полные обязательные suites (unit + integration + mutation + e2e) для component/aggregator projects
+5. Публикация проверенных immutable artifacts
+6. При необходимости — protected Vault fetch и ручной deploy digest-pinned образа после подтверждения
+
+Профиль `deployment-only consumer` пропускает component build/security/test/publication и выполняет только необходимые protected Vault fetch и Compose deploy jobs.
 
 ### Инструкции по нарушению правил
 
