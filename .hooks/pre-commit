@@ -22,9 +22,9 @@ EXIT_CODE=0
 # Check 1: Run security scan on staged files
 echo "📋 Checking for secrets in staged files..."
 if command -v gitleaks &> /dev/null; then
-    if ! gitleaks detect --source . --staged --report-path /tmp/gitleaks_staged.json 2>/dev/null; then
+    if ! gitleaks protect --source . --staged --redact --report-path /tmp/gitleaks_staged.json 2>/dev/null; then
         echo "❌ Secrets detected in staged files!"
-        cat /tmp/gitleaks_staged.json | jq '.[] | {File: .File, Secret: .Secret}' 2>/dev/null || true
+        jq '.[] | {File: .File, RuleID: .RuleID, StartLine: .StartLine}' /tmp/gitleaks_staged.json 2>/dev/null || true
         EXIT_CODE=1
     else
         echo "✅ No secrets detected"

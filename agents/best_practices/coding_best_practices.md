@@ -446,7 +446,7 @@ def get_user(username: str):
     return db.execute(query, [username])
 
 # ❌ Плохо - хардкод секретов
-API_KEY = "sk-1234567890abcdef"
+API_KEY = "<redacted>"
 
 # ✅ Хорошо - переменные окружения
 import os

@@ -4,8 +4,9 @@ required-tests:
   before_script:
     - apt-get update
     - apt-get install -y --no-install-recommends ca-certificates curl git
-    - curl --fail --location --silent --show-error https://astral.sh/uv/install.sh | sh
+    - curl --proto '=https' --tlsv1.2 --fail --location --silent --show-error https://releases.astral.sh/github/uv/releases/download/0.13.5/uv-installer.sh | sh
     - export PATH="$HOME/.local/bin:$PATH"
+    - test "$(uv --version)" = "uv 0.13.5"
   script:
     - bash scripts/ci/run-required-tests.sh python
   rules:

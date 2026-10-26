@@ -7,9 +7,8 @@ head="${CI_COMMIT_SHA:?CI_COMMIT_SHA is required}"
 
 git -C "$root" diff --check "$base" "$head"
 
-mapfile -d '' -t linters < <(
-  find "$root/scripts/ci" -maxdepth 1 -type f -name 'lint-*.sh' -print0 | sort -z
-)
+shopt -s nullglob
+linters=("$root"/scripts/ci/lint-*.sh)
 if ((${#linters[@]} == 0)); then
   echo "No language-specific lint scripts found in scripts/ci/lint-*.sh" >&2
   exit 1

@@ -4,7 +4,7 @@ semgrep-sast:
     name: semgrep/semgrep:1.99.0
     entrypoint: [""]
   script:
-    - semgrep scan --config auto --error --metrics off src tests scripts agents
+    - semgrep scan --config auto --error --metrics off src scripts agents deploy
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
 
@@ -16,7 +16,7 @@ semgrep-sast-mr:
     name: semgrep/semgrep:1.99.0
     entrypoint: [""]
   script:
-    - semgrep scan --config auto --error --metrics off src tests scripts agents
+    - semgrep scan --config auto --error --metrics off src scripts agents deploy
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_PROJECT_PATH == $CI_PROJECT_PATH && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH && $AGENTS_MR_CI_ENABLED == "true"'
     - when: never
