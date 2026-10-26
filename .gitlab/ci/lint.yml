@@ -1,0 +1,11 @@
+lint-static-mr:
+  stage: sast
+  tags:
+    - untrusted-ci
+  image: "$AGENTS_CI_LINT_IMAGE"
+  script:
+    - test -x scripts/ci/lint_static.sh
+    - scripts/ci/lint_static.sh
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_PROJECT_PATH == $CI_PROJECT_PATH && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH && $AGENTS_MR_CI_ENABLED == "true"'
+    - when: never

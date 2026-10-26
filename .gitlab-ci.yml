@@ -1,7 +1,11 @@
 workflow:
   rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_PROJECT_PATH == $CI_PROJECT_PATH && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH && $AGENTS_MR_CI_ENABLED == "true"'
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
     - when: never
+
+variables:
+  AGENTS_MR_CI_ENABLED: "false"
 
 include:
   - local: '/.gitlab/ci/.gitlab-ci.yml'
