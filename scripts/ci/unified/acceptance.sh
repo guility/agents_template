@@ -1,19 +1,20 @@
-# Sourced by unified_ci_runner.sh.
+# Source this file from the unified runner so stage functions share its paths, logs, and status context.
 
-# Stage: E2E Tests
+# Exercise complete user-facing flows because component tests cannot prove the full system works.
 run_e2e_tests() {
     log_stage "Running e2e tests..."
     
+    # Keep trying available E2E runners so one failure does not hide another suite's result.
     local failed=0
     
-    # Python e2e tests
+    # Run Python acceptance tests only when the repository has that test tree and pytest is installed.
     if [ -d "$PROJECT_ROOT/src/tests/e2e" ]; then
         if command -v pytest &> /dev/null; then
             pytest "$PROJECT_ROOT/src/tests/e2e" || failed=1
         fi
     fi
     
-    # Node.js e2e tests (Playwright/Cypress)
+    # Delegate browser tooling to the package script so Playwright/Cypress options remain project-owned.
     if [ -f "$PROJECT_ROOT/package.json" ]; then
         if command -v pnpm &> /dev/null; then
             pnpm test:e2e || failed=1
@@ -30,7 +31,7 @@ run_e2e_tests() {
     fi
 }
 
-# Stage: Mutation Tests
+# Check test effectiveness by applying mutations and requiring tests to detect those changes.
 run_mutation_tests() {
     log_stage "Running mutation tests..."
     
@@ -40,11 +41,12 @@ run_mutation_tests() {
             --generate-report
         log_success "Mutation tests completed"
     else
+        # Some consumers adopt this optional helper before they maintain a mutation runner.
         log_warn "Mutation runner not found, skipping"
     fi
 }
 
-# Stage: Traceability Check
+# Link requirements to tests so reviewers can see which expected behaviors are covered.
 run_traceability_check() {
     log_stage "Running traceability check..."
     
@@ -54,6 +56,7 @@ run_traceability_check() {
             --output "$PROJECT_ROOT/reports/testing/traceability_matrix.json"
         log_success "Traceability check completed"
     else
+        # Make gradual adoption visible instead of implying a traceability report was produced.
         log_warn "Traceability matrix generator not found, skipping"
     fi
 }

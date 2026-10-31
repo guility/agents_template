@@ -1,22 +1,22 @@
 #!/bin/bash
-# detect-ci-platform.sh - Определяет платформу CI/CD (GitHub или GitLab)
+# Detect the active CI provider so shared scripts can choose provider-specific behavior reliably.
 
 set -e
 
 detect_platform() {
-    # Проверка переменных окружения GitHub Actions
+    # Prefer explicit runner markers because they identify the current execution, not just repository files.
     if [ -n "$GITHUB_ACTIONS" ] && [ "$GITHUB_ACTIONS" = "true" ]; then
         echo "github"
         return 0
     fi
     
-    # Проверка переменных окружения GitLab CI
+    # Check GitLab's marker next for the same reason, before using local repository clues.
     if [ -n "$GITLAB_CI" ] && [ "$GITLAB_CI" = "true" ]; then
         echo "gitlab"
         return 0
     fi
     
-    # Проверка наличия директорий как fallback
+    # Infer from workflow directories only when exactly one provider configuration is present.
     if [ -d ".github/workflows" ] && [ ! -d ".gitlab/ci" ]; then
         echo "github"
         return 0
@@ -27,7 +27,7 @@ detect_platform() {
         return 0
     fi
     
-    # Если обе директории существуют, проверяем наличие remote
+    # If both configurations exist, use known origin host markers to break the tie.
     if [ -d ".git" ]; then
         REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
         
@@ -42,22 +42,22 @@ detect_platform() {
         fi
     fi
     
-    # По умолчанию возвращаем github
+    # Keep local tooling usable when no CI marker or provider-specific repository clue exists.
     echo "github"
     return 0
 }
 
-# Экспорт переменной для использования в других скриптах
+# Export once so downstream helpers share the same detected provider.
 export CI_PLATFORM=$(detect_platform)
 echo "Detected CI platform: $CI_PLATFORM"
 
-# Функция для получения пути к скриптам common
+# Resolve shared helpers relative to this script so callers can run from any working directory.
 get_common_script() {
     local script_name=$1
     echo "$(dirname "$0")/common/${script_name}"
 }
 
-# Функция для запуска общего скрипта
+# Reuse common implementations and fail clearly when the requested helper is missing.
 run_common() {
     local script_name=$1
     shift
@@ -71,7 +71,7 @@ run_common() {
     fi
 }
 
-# Если скрипт вызывается напрямую, выводим платформу
+# Expose CLI status checks only for direct execution; sourcing this file keeps its helpers available.
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
     case "${1:-}" in
         --platform)

@@ -1,6 +1,6 @@
-# Sourced by unified_ci_runner.sh.
+# Source shared helpers into the runner so every stage uses the same provider, colors, and log format.
 
-# Detect CI platform
+# Identify the runner context so reports distinguish hosted CI from local checks.
 detect_ci_platform() {
     if [ -n "${GITHUB_ACTIONS:-}" ]; then
         echo "github"
@@ -11,7 +11,7 @@ detect_ci_platform() {
     fi
 }
 
-# Colors
+# Use color only to make human-readable logs scannable; job status still comes from exit codes.
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'

@@ -1,10 +1,11 @@
-# Sourced by unified_ci_runner.sh.
+# Source summary generation into the runner so it can report the final status of every stage.
 
-# Stage: Generate Summary Report
+# Persist a stage report so failures remain diagnosable after CI logs expire.
 generate_summary() {
     log_stage "Generating pipeline summary..."
     
     local summary_file="$PROJECT_ROOT/reports/ci_summary_$(date +%Y%m%d_%H%M%S).md"
+    # Include the provider so reviewers can distinguish hosted pipeline results from local runs.
     local platform=$(detect_ci_platform)
     
     cat > "$summary_file" << EOF
@@ -39,6 +40,7 @@ generate_summary() {
 
 EOF
 
+    # Add a human-readable next step based on recorded statuses for quick triage.
     if grep -q "FAILED\|ERROR" "$summary_file" 2>/dev/null; then
         echo "- 🔴 Review failed stages and fix issues" >> "$summary_file"
     else
