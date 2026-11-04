@@ -15,6 +15,7 @@
 - Unit, integration, e2e и мутационные тесты.
 - Проверки сложности, безопасности, форматирования и трассируемости.
 - GitHub Actions и GitLab CI.
+- Пакет Lean-to-Rust ожидает review и публикации в agents-template-langs.
 - Языковые заготовки для Python, Node.js/TypeScript, Rust, Go и C#.
 
 ## Структура репозитория
@@ -53,6 +54,8 @@ cd my-project
 ### 2. Загрузите языковой пакет
 
 Языковые правила и шаблоны публикуются отдельно в Git-тегах [`agents-template-langs`](https://github.com/guility/agents-template-langs). Теги и инструкции для каждой версии перечислены в README этого репозитория.
+
+Поддержка Lean-to-Rust готовится в [Draft PR #4](https://github.com/guility/agents-template-langs/pull/4). Опции lean и all заработают после публикации неизменяемого тега lean/v1.0.0; не объединяйте этот fetcher до появления тега.
 
 Загрузите нужный пакет в локальный кэш:
 
