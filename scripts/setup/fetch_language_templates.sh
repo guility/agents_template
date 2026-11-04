@@ -5,11 +5,11 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 repository="https://github.com/guility/agents-template-langs.git"
 requested="${1:-all}"
 if [[ "$requested" == all ]]; then
-  languages=(python nodejs rust go csharp)
+  languages=(python nodejs rust go csharp lean)
 else
   case "$requested" in
-    python|nodejs|rust|go|csharp) languages=("$requested") ;;
-    *) echo "Usage: $0 {python|nodejs|rust|go|csharp|all}" >&2; exit 2 ;;
+    python|nodejs|rust|go|csharp|lean) languages=("$requested") ;;
+    *) echo "Usage: $0 {python|nodejs|rust|go|csharp|lean|all}" >&2; exit 2 ;;
   esac
 fi
 
@@ -22,6 +22,7 @@ for language in "${languages[@]}"; do
     rust) tag=rust/v1.0.1 ;;
     go) tag=go/v1.0.1 ;;
     csharp) tag=csharp/v1.0.2 ;;
+    lean) tag=lean/v1.0.0 ;;
   esac
   git clone --quiet --depth 1 --branch "$tag" "$repository" "$cache/$language"
   destination="$root/src/templates/$language"
